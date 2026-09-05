@@ -11,7 +11,17 @@ import { optionalText } from '../../../shared/validation/formValidation'
 import { formatDate, formatDateTime } from '../../timeOff/timeOffUtils'
 import attendanceApi from '../api/attendanceApi'
 
-const localDateTime = (value) => value ? new Date(value).toISOString().slice(0, 16) : ''
+const toLocalDateTimeInput = (value) => {
+  if (!value) return ''
+
+  const date = new Date(value)
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+
+  return localDate.toISOString().slice(0, 16)
+}
+
+const toIsoTimestamp = (value) => (value ? new Date(value).toISOString() : undefined)
+
 function Item({ label, children }) { return <div className="detail-item"><dt>{label}</dt><dd>{children || 'Not available'}</dd></div> }
 
 export default function AttendanceDetailPage() {
@@ -19,7 +29,15 @@ export default function AttendanceDetailPage() {
   const [record, setRecord] = useState(null); const [error, setError] = useState(''); const [editing, setEditing] = useState(false); const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({ checkIn: '', checkOut: '', notes: '', correctionReason: '' })
   useEffect(() => { attendanceApi.get(id).then(setRecord).catch((requestError) => setError(getApiError(requestError).message)) }, [id])
-  const begin = () => { setForm({ checkIn: localDateTime(record.checkIn), checkOut: localDateTime(record.checkOut), notes: record.notes || '', correctionReason: '' }); setEditing(true) }
+  const begin = () => {
+    setForm({
+      checkIn: toLocalDateTimeInput(record.checkIn),
+      checkOut: toLocalDateTimeInput(record.checkOut),
+      notes: record.notes || '',
+      correctionReason: '',
+    })
+    setEditing(true)
+  }
   const save = async (event) => {
     event.preventDefault(); setBusy(true); setError('')
     if (form.checkIn && form.checkOut && new Date(form.checkOut).getTime() <= new Date(form.checkIn).getTime()) {
@@ -33,7 +51,15 @@ export default function AttendanceDetailPage() {
     if (!correctionReason) {
       setError('Correction reason is required.'); setBusy(false); return
     }
-    try { const saved = await attendanceApi.correct(id, { checkIn: form.checkIn, ...(form.checkOut ? { checkOut: form.checkOut } : {}), notes: form.notes.trim(), correctionReason }); setRecord(saved); setEditing(false) }
+    try {
+      const saved = await attendanceApi.correct(id, {
+        checkIn: toIsoTimestamp(form.checkIn),
+        ...(form.checkOut ? { checkOut: toIsoTimestamp(form.checkOut) } : {}),
+        notes: form.notes.trim(),
+        correctionReason,
+      })
+      setRecord(saved); setEditing(false)
+    }
     catch (requestError) { setError(getApiError(requestError).message) } finally { setBusy(false) }
   }
   if (!record && !error) return <LoadingState label="Loading attendance record..." />
