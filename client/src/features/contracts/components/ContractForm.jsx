@@ -1,7 +1,23 @@
 import { useState } from 'react'
 import ErrorBanner from '../../../shared/components/ErrorBanner/ErrorBanner'
 import FormField from '../../../shared/components/FormField/FormField'
+import {
+  nonNegativeNumber,
+  dateRange,
+  optionExists,
+  oneOf,
+} from '../../../shared/validation/formValidation'
 import { employeeLabel, recordId, referenceId } from '../contractUtils'
+
+const JOB_POSITIONS = [
+  'Software Engineer',
+  'HR Executive',
+  'Payroll Executive',
+  'Accountant',
+  'Sales Executive',
+  'Operations Executive',
+  'Manager',
+]
 
 const values = (contract) => ({
   employeeId: referenceId(contract?.employee), departmentId: referenceId(contract?.department), jobPosition: contract?.jobPosition || '',
@@ -19,10 +35,16 @@ export default function ContractForm({ contract, references, error, busy, onSubm
   }
   const submit = (event) => {
     event.preventDefault()
-    const required = ['employeeId', 'departmentId', 'jobPosition', 'workingScheduleId', 'salaryStructureId', 'wage', 'startDate']
-    if (required.some((field) => String(form[field]).trim() === '')) return setFieldError('Complete all required Contract fields.')
-    if (!Number.isFinite(Number(form.wage)) || Number(form.wage) < 0) return setFieldError('Wage must be a non-negative number.')
-    if (form.endDate && form.startDate > form.endDate) return setFieldError('End date cannot be before start date.')
+    const errors = [
+      optionExists(form.employeeId, references.employees, (item) => recordId(item), 'Employee'),
+      optionExists(form.departmentId, references.departments, (item) => recordId(item), 'Department'),
+      oneOf(form.jobPosition, JOB_POSITIONS, 'Job position'),
+      optionExists(form.workingScheduleId, references.schedules, (item) => recordId(item), 'Working schedule'),
+      optionExists(form.salaryStructureId, references.structures, (item) => recordId(item), 'Salary structure'),
+      nonNegativeNumber(form.wage, 'Monthly wage'),
+      dateRange(form.startDate, form.endDate, 'Start date', 'End date', false),
+    ].find(Boolean)
+    if (errors) return setFieldError(errors)
     setFieldError('')
     onSubmit({ employeeId: form.employeeId, departmentId: form.departmentId, jobPosition: form.jobPosition.trim(), workingScheduleId: form.workingScheduleId, salaryStructureId: form.salaryStructureId, wage: Number(form.wage), wageType: 'MONTHLY', startDate: form.startDate, endDate: form.endDate || null })
   }
@@ -33,7 +55,7 @@ export default function ContractForm({ contract, references, error, busy, onSubm
     <div className="form-grid">
       <FormField label="Employee *" htmlFor="contract-employee"><select id="contract-employee" name="employeeId" required value={form.employeeId} onChange={selectEmployee}><option value="">Select employee</option>{references.employees.map((employee) => <option key={recordId(employee)} value={recordId(employee)}>{employeeLabel(employee)} ({employee.employeeId})</option>)}</select></FormField>
       <FormField label="Department *" htmlFor="contract-department"><select id="contract-department" name="departmentId" required value={form.departmentId} onChange={update}><option value="">Select department</option>{activeOrCurrent(references.departments, form.departmentId).map((department) => <option key={recordId(department)} value={recordId(department)}>{department.name}</option>)}</select></FormField>
-      <FormField label="Job position *" htmlFor="contract-job"><input id="contract-job" name="jobPosition" required value={form.jobPosition} onChange={update} /></FormField>
+      <FormField label="Job position *" htmlFor="contract-job"><select id="contract-job" name="jobPosition" required value={form.jobPosition} onChange={update}><option value="">Select job position</option>{JOB_POSITIONS.map((position) => <option key={position} value={position}>{position}</option>)}</select></FormField>
       <FormField label="Working schedule *" htmlFor="contract-schedule"><select id="contract-schedule" name="workingScheduleId" required value={form.workingScheduleId} onChange={update}><option value="">Select schedule</option>{activeOrCurrent(references.schedules, form.workingScheduleId).map((schedule) => <option key={recordId(schedule)} value={recordId(schedule)}>{schedule.name}</option>)}</select></FormField>
       <FormField label="Salary Structure *" htmlFor="contract-structure"><select id="contract-structure" name="salaryStructureId" required disabled={!references.salaryStructureAccess} value={form.salaryStructureId} onChange={update}><option value="">Select Salary Structure</option>{activeOrCurrent(references.structures, form.salaryStructureId).map((structure) => <option key={recordId(structure)} value={recordId(structure)}>{structure.name} ({structure.code})</option>)}</select></FormField>
       <FormField label="Monthly wage *" htmlFor="contract-wage"><input id="contract-wage" name="wage" type="number" min="0" step="0.01" required value={form.wage} onChange={update} /></FormField>
