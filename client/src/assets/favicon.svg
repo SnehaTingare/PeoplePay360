@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <g id="bill">
+      <!-- Base Bill Shape -->
+      <rect x="-160" y="-85" width="320" height="170" rx="16" fill="#7bc676" />
+      
+      <!-- Top and Left Light Green Highlight -->
+      <path d="M -160,-69 A 16 16 0 0 1 -144,-85 L 144,-85 L 144,-61 L -136,-61 L -136,69 L -160,69 Z" fill="#a6dfa0" />
+      
+      <!-- Inner Scalloped Border -->
+      <path d="M -144,-53 A 16 16 0 0 1 -128,-69 L 128,-69 A 16 16 0 0 1 144,-53 L 144,53 A 16 16 0 0 1 128,69 L -128,69 A 16 16 0 0 1 -144,53 Z" fill="none" stroke="#30313d" stroke-width="12" stroke-linejoin="round" />
+      
+      <!-- Outer Dark Stroke (drawn last for perfect overlap) -->
+      <rect x="-160" y="-85" width="320" height="170" rx="16" fill="none" stroke="#30313d" stroke-width="16" />
+    </g>
+  </defs>
+
+  <!-- Envelope Interior (Back) -->
+  <path d="M 40,260 L 472,260 L 472,480 L 40,480 Z" fill="#ea9e3f" stroke="#30313d" stroke-width="16" stroke-linejoin="round" />
+
+  <!-- Stacked Banknotes -->
+  <!-- Back Bill -->
+  <use href="#bill" x="0" y="0" transform="translate(172, 201) rotate(-55)" />
+  
+  <!-- Middle Bill -->
+  <use href="#bill" x="0" y="0" transform="translate(233, 220) rotate(-35)" />
+  
+  <!-- Front Bill -->
+  <g transform="translate(282, 257) rotate(-15)">
+    <use href="#bill" x="0" y="0" />
+    
+    <!-- Circle and Dash Details on the Front Bill -->
+    <circle cx="15" cy="35" r="26" fill="#5ca45c" stroke="#30313d" stroke-width="12" />
+    <line x1="65" y1="35" x2="115" y2="35" stroke="#30313d" stroke-width="12" stroke-linecap="round" />
+  </g>
+
+  <!-- Envelope Front Flaps -->
+  <!-- Left Side Flap -->
+  <path d="M 40,260 L 40,480 L 256,380 Z" fill="#fcd36c" stroke="#30313d" stroke-width="16" stroke-linejoin="round" />
+  
+  <!-- Right Side Flap -->
+  <path d="M 472,260 L 472,480 L 256,380 Z" fill="#fcd36c" stroke="#30313d" stroke-width="16" stroke-linejoin="round" />
+  
+  <!-- Bottom Flap -->
+  <path d="M 40,480 L 256,380 L 472,480 Z" fill="#fcd36c" stroke="#30313d" stroke-width="16" stroke-linejoin="round" />
+
+  <!-- White Chevron Decoration on Bottom Flap -->
+  <path d="M 140,450 L 256,410 L 372,450" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

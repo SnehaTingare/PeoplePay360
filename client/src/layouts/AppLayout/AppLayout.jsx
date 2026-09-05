@@ -219,7 +219,7 @@ export default function AppLayout() {
           {/* ================= SIDEBAR FOOTER ================= */}
 
           <div className="sidebar-footer">
-           <button
+            <button
   className="change-password-button"
   onClick={() => navigate('/change-password')}
   title="Change Password"
@@ -227,6 +227,7 @@ export default function AppLayout() {
   <Icon name="key" size={18} />
   <span>Change Password</span>
 </button>
+
             <button
               className="signout-button"
               onClick={() =>
