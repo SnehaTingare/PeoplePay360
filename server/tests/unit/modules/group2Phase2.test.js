@@ -60,8 +60,10 @@ test('Attendance: duplicate open check-in, checkout prerequisites and time valid
   const closed = await service.checkOut(actor);
   assert.equal(closed.workedMinutes, 540); // Scheduled break is NOT subtracted.
   assert.equal(closed.status, 'OVERTIME');
+  await rejectsCode(() => service.checkIn(actor), 'ATT-003');
   assert.equal(Model.rows.size, 1);
-  assert.ok(AttendanceModel.schema.indexes().some(([, options]) => options.unique && options.partialFilterExpression.status === 'OPEN'));
+  assert.ok(AttendanceModel.schema.indexes().some(([keys, options]) => options.unique && options.partialFilterExpression?.status === 'OPEN' && keys.employee === 1));
+  assert.ok(AttendanceModel.schema.indexes().some(([keys, options]) => options.unique && options.name === 'one_attendance_per_employee_per_day' && keys.employee === 1 && keys.date === 1));
 });
 
 test('Attendance: HR correction recalculates minutes and records audit data; ownership enforced', async () => {

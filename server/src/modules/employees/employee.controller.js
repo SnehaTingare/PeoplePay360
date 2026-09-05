@@ -5,7 +5,7 @@ const defaultService = require('./employee.service');
 
 module.exports = function createEmployeeController(service = defaultService) {
   return {
-    me: async (req, res) => response.resource(res, await service.getOwnEmployee(req.user)),
+    me: async (req, res) => response.resource(res, await service.getOwnEmployeeProfile(req.user)),
     list: async (req, res) => response.collection(res, await service.listEmployees(req.validatedQuery)),
     create: async (req, res) => response.resource(res, await service.createEmployee(req.body), 201),
     get: async (req, res) => response.resource(res, await service.getEmployee(req.params.id)),

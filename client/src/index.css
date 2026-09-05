@@ -150,6 +150,9 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
 .detail-section { padding: 1.25rem; }
 .detail-section h2 { margin-bottom: 1rem; font-size: 1rem; }
 .detail-section dl { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
+.schedule-day-list { display: grid; gap: .6rem; margin-top: 1.1rem; }
+.schedule-day { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(120px, 1fr) auto; gap: .7rem; align-items: center; padding-top: .6rem; border-top: 1px solid #eaecf0; font-size: .84rem; }
+.schedule-day span, .schedule-day small { color: var(--muted); }
 .detail-item { min-width: 0; }
 .detail-item dt { margin-bottom: .2rem; color: var(--muted); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .detail-item dd { margin: 0; color: #1d2939; overflow-wrap: anywhere; }
@@ -164,6 +167,8 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
 .inline-form { margin-bottom: 1rem; padding: clamp(1rem, 3vw, 1.5rem); }
 .inline-form h2 { margin-bottom: 1rem; font-size: 1.05rem; }
 .operation-filters { padding: 1rem; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: repeat(5, minmax(145px, 1fr)); gap: .7rem; }
+.filter-field { display: grid; gap: .42rem; }
+.filter-field label { color: #667085; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .check-grid { display: grid; align-content: center; gap: .7rem; }
 .balance-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: .75rem; margin-bottom: 1rem; }
 .balance-card { padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: white; display: grid; gap: .2rem; }

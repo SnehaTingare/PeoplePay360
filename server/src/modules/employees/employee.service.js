@@ -714,6 +714,12 @@ function createEmployeeService({
     );
   }
 
+  async function getOwnEmployeeProfile(actor) {
+    const employee = await getOwnEmployee(actor);
+    const schedule = await schedules.getSchedule(employee.workingSchedule);
+    return { ...employee.toObject(), workingSchedule: schedule };
+  }
+
   async function assertOwnership(
     employeeId,
     actor
@@ -759,6 +765,7 @@ function createEmployeeService({
 
     // Important self-service helpers
     getOwnEmployee,
+    getOwnEmployeeProfile,
 
     resolveEmployeeForUser,
 
