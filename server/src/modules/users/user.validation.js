@@ -86,8 +86,26 @@ function validateListUsers({ query }) {
 function validateCreateUser({ body }) {
   object(body);
   allowed(body, ['firstName', 'lastName', 'email', 'role']);
-  if (!canonicalRole(body.role)) fail(errors.USER_INVALID_ROLE, 'role');
-  if (body.role === roles.EMPLOYEE) fail(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING, 'role');
+
+  if (!canonicalRole(body.role)) {
+    fail(errors.USER_INVALID_ROLE, 'role');
+  }
+
+  if (body.role === roles.EMPLOYEE) {
+    fail(
+      errors.USER_EMPLOYEE_REQUIRES_ONBOARDING,
+      'role'
+    );
+  }
+
+  if (body.role === roles.ADMIN) {
+    fail(
+      errors.USER_INVALID_ROLE,
+      'role',
+      'Admin role is reserved for the bootstrap administrator.'
+    );
+  }
+
   return { body: {
     firstName: name(body.firstName, 'firstName'), lastName: name(body.lastName, 'lastName'),
     email: email(body.email), role: body.role,
@@ -110,8 +128,26 @@ function validateChangeRole({ body, params }) {
   validateUserId({ params });
   object(body);
   allowed(body, ['role']);
-  if (!canonicalRole(body.role)) fail(errors.USER_INVALID_ROLE, 'role');
-  if (body.role === roles.EMPLOYEE) fail(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING, 'role');
+
+  if (!canonicalRole(body.role)) {
+    fail(errors.USER_INVALID_ROLE, 'role');
+  }
+
+  if (body.role === roles.EMPLOYEE) {
+    fail(
+      errors.USER_EMPLOYEE_REQUIRES_ONBOARDING,
+      'role'
+    );
+  }
+
+  if (body.role === roles.ADMIN) {
+    fail(
+      errors.USER_INVALID_ROLE,
+      'role',
+      'Admin role is reserved for the bootstrap administrator.'
+    );
+  }
+
   return { params: { id: params.id }, body: { role: body.role } };
 }
 

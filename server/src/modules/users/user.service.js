@@ -89,8 +89,20 @@ async function createUser(
   { firstName, lastName, email, role },
   { emails = accountEmailService } = {},
 ) {
-  if (!isCanonicalRole(role)) throw appError(errors.USER_INVALID_ROLE);
-  if (role === roles.EMPLOYEE) throw appError(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING);
+  if (!isCanonicalRole(role)) {
+    throw appError(errors.USER_INVALID_ROLE);
+  }
+
+  if (role === roles.EMPLOYEE) {
+    throw appError(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING);
+  }
+
+  if (role === roles.ADMIN) {
+    throw appError(errors.USER_INVALID_ROLE, {
+      message: 'Admin role is reserved for the bootstrap administrator.',
+    });
+  }
+
   const normalizedEmail = normalizeEmail(email);
   if (await User.exists({ email: normalizedEmail })) throw appError(errors.USER_DUPLICATE_EMAIL);
 
@@ -225,20 +237,62 @@ async function updateUser(id, changes) {
   return serializeUser(user);
 }
 
-async function changeRole(id, role) {
-  if (!isCanonicalRole(role)) throw appError(errors.USER_INVALID_ROLE);
-  if (role === roles.EMPLOYEE) throw appError(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING);
+function assertNotSelf(userId, actor) {
+  const actorId = String(actor?.id || actor?._id || '');
+
+  if (String(userId) === actorId) {
+    throw new AppError(
+      'RESOURCE_CONFLICT',
+      'You cannot change your own role or account status.',
+      409
+    );
+  }
+}
+
+async function changeRole(id, role, actor) {
+  assertNotSelf(id, actor);
+
+  if (!isCanonicalRole(role)) {
+    throw appError(errors.USER_INVALID_ROLE);
+  }
+
+  if (role === roles.EMPLOYEE) {
+    throw appError(
+      errors.USER_EMPLOYEE_REQUIRES_ONBOARDING
+    );
+  }
+
+  if (role === roles.ADMIN) {
+    throw appError(errors.USER_INVALID_ROLE, {
+      message:
+        'Admin role is reserved for the bootstrap administrator.',
+    });
+  }
+
   const user = await findByIdOrThrow(id);
-  if (user.employeeId) throw new AppError('RESOURCE_CONFLICT', 'Linked Employee accounts must retain role EMPLOYEE.', 409);
+
+  if (user.employeeId) {
+    throw new AppError(
+      'RESOURCE_CONFLICT',
+      'Linked Employee accounts must retain role EMPLOYEE.',
+      409
+    );
+  }
+
   user.role = role;
   await user.save();
+
   return serializeUser(user);
 }
 
-async function setAccountStatus(id, accountStatus) {
+async function setAccountStatus(id, accountStatus, actor) {
+  assertNotSelf(id, actor);
+
   const user = await findByIdOrThrow(id);
+
   user.accountStatus = accountStatus;
   await user.save();
+
   return serializeUser(user);
 }
 

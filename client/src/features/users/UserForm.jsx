@@ -7,7 +7,11 @@ import {
   email as validateEmail,
 } from '../../shared/validation/formValidation'
 
-const INTERNAL_ROLE_OPTIONS = ROLE_OPTIONS.filter((role) => role !== ROLES.EMPLOYEE)
+const INTERNAL_ROLE_OPTIONS = ROLE_OPTIONS.filter(
+  (role) =>
+    role !== ROLES.EMPLOYEE &&
+    role !== ROLES.ADMIN
+)
 const emptyForm = { firstName: '', lastName: '', email: '', role: ROLES.HR_MANAGER }
 
 export default function UserForm({ user, onSubmit, onCancel, busy, error, submitLabel }) {
