@@ -1,0 +1,46 @@
+import { useState } from 'react'
+import ErrorBanner from '../../../shared/components/ErrorBanner/ErrorBanner'
+import FormField from '../../../shared/components/FormField/FormField'
+import { employeeLabel, recordId, referenceId } from '../contractUtils'
+
+const values = (contract) => ({
+  employeeId: referenceId(contract?.employee), departmentId: referenceId(contract?.department), jobPosition: contract?.jobPosition || '',
+  workingScheduleId: referenceId(contract?.workingSchedule), salaryStructureId: referenceId(contract?.salaryStructure),
+  wage: contract?.wage ?? '', startDate: contract?.startDate?.slice(0, 10) || '', endDate: contract?.endDate?.slice(0, 10) || '',
+})
+
+export default function ContractForm({ contract, references, error, busy, onSubmit, onCancel }) {
+  const [form, setForm] = useState(() => values(contract))
+  const [fieldError, setFieldError] = useState('')
+  const update = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+  const selectEmployee = (event) => {
+    const employee = references.employees.find((item) => recordId(item) === event.target.value)
+    setForm((current) => ({ ...current, employeeId: event.target.value, departmentId: current.departmentId || referenceId(employee?.department), jobPosition: current.jobPosition || employee?.jobPosition || '', workingScheduleId: current.workingScheduleId || referenceId(employee?.workingSchedule) }))
+  }
+  const submit = (event) => {
+    event.preventDefault()
+    const required = ['employeeId', 'departmentId', 'jobPosition', 'workingScheduleId', 'salaryStructureId', 'wage', 'startDate']
+    if (required.some((field) => String(form[field]).trim() === '')) return setFieldError('Complete all required Contract fields.')
+    if (!Number.isFinite(Number(form.wage)) || Number(form.wage) < 0) return setFieldError('Wage must be a non-negative number.')
+    if (form.endDate && form.startDate > form.endDate) return setFieldError('End date cannot be before start date.')
+    setFieldError('')
+    onSubmit({ employeeId: form.employeeId, departmentId: form.departmentId, jobPosition: form.jobPosition.trim(), workingScheduleId: form.workingScheduleId, salaryStructureId: form.salaryStructureId, wage: Number(form.wage), wageType: 'MONTHLY', startDate: form.startDate, endDate: form.endDate || null })
+  }
+  const activeOrCurrent = (items, current) => items.filter((item) => item.active !== false || recordId(item) === current)
+
+  return <form className="panel form-panel contract-form" onSubmit={submit}><ErrorBanner message={fieldError || error} />
+    {!references.salaryStructureAccess && <div className="alert alert--warning">Your backend role cannot read Salary Structures. Contract creation or editing requires a payroll user or Admin until that API permission is aligned.</div>}
+    <div className="form-grid">
+      <FormField label="Employee *" htmlFor="contract-employee"><select id="contract-employee" name="employeeId" required value={form.employeeId} onChange={selectEmployee}><option value="">Select employee</option>{references.employees.map((employee) => <option key={recordId(employee)} value={recordId(employee)}>{employeeLabel(employee)} ({employee.employeeId})</option>)}</select></FormField>
+      <FormField label="Department *" htmlFor="contract-department"><select id="contract-department" name="departmentId" required value={form.departmentId} onChange={update}><option value="">Select department</option>{activeOrCurrent(references.departments, form.departmentId).map((department) => <option key={recordId(department)} value={recordId(department)}>{department.name}</option>)}</select></FormField>
+      <FormField label="Job position *" htmlFor="contract-job"><input id="contract-job" name="jobPosition" required value={form.jobPosition} onChange={update} /></FormField>
+      <FormField label="Working schedule *" htmlFor="contract-schedule"><select id="contract-schedule" name="workingScheduleId" required value={form.workingScheduleId} onChange={update}><option value="">Select schedule</option>{activeOrCurrent(references.schedules, form.workingScheduleId).map((schedule) => <option key={recordId(schedule)} value={recordId(schedule)}>{schedule.name}</option>)}</select></FormField>
+      <FormField label="Salary Structure *" htmlFor="contract-structure"><select id="contract-structure" name="salaryStructureId" required disabled={!references.salaryStructureAccess} value={form.salaryStructureId} onChange={update}><option value="">Select Salary Structure</option>{activeOrCurrent(references.structures, form.salaryStructureId).map((structure) => <option key={recordId(structure)} value={recordId(structure)}>{structure.name} ({structure.code})</option>)}</select></FormField>
+      <FormField label="Monthly wage *" htmlFor="contract-wage"><input id="contract-wage" name="wage" type="number" min="0" step="0.01" required value={form.wage} onChange={update} /></FormField>
+      <FormField label="Start date *" htmlFor="contract-start"><input id="contract-start" name="startDate" type="date" required value={form.startDate} onChange={update} /></FormField>
+      <FormField label="End date" htmlFor="contract-end" hint="Leave blank for an open-ended Contract."><input id="contract-end" name="endDate" type="date" value={form.endDate} onChange={update} /></FormField>
+      <FormField label="Wage type" htmlFor="contract-wage-type"><input id="contract-wage-type" value="Monthly" disabled /></FormField>
+    </div>
+    <div className="form-actions"><button type="button" className="button button--secondary" onClick={onCancel} disabled={busy}>Cancel</button><button className="button" disabled={busy || !references.salaryStructureAccess}>{busy ? 'Saving...' : contract ? 'Save changes' : 'Create Contract'}</button></div>
+  </form>
+}

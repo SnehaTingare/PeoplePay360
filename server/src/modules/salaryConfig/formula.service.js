@@ -3,6 +3,11 @@
 const AppError = require('../../core/errors/AppError');
 const fail = (code, message) => { throw new AppError(code, message, 422, code === 'SAL-008' || code === 'SAL-003' ? 'BLOCKING' : 'ERROR'); };
 const precedence = { '+': 1, '-': 1, '*': 2, '/': 2, 'u+': 3, 'u-': 3 };
+const RUNTIME_INPUTS = new Set([
+  'CONTRACT_WAGE', 'EXPECTED_WORKING_DAYS', 'EXPECTED_WORKING_MINUTES',
+  'UNPAID_LEAVE_DAYS', 'UNPAID_LEAVE_HOURS', 'WORKED_DAYS', 'DAILY_RATE',
+  'ATTENDANCE_WORKED_HOURS',
+]);
 
 // Shunting-yard parser: only numbers, identifiers, arithmetic and parentheses.
 function parseFormula(expression) {
@@ -97,13 +102,13 @@ function validateDependencies(rules) {
   const byCode = new Map();
   for (const rule of rules) {
     if (byCode.has(rule.code)) fail('SAL-001', 'Duplicate rule code in salary structure.');
-    if (rule.code === 'CONTRACT_WAGE') fail('SAL-003', 'Rule code conflicts with payroll input.');
+    if (RUNTIME_INPUTS.has(rule.code)) fail('SAL-003', 'Rule code conflicts with payroll input.');
     if (!Number.isSafeInteger(rule.sequence) || rule.sequence < 0) fail('SAL-002', 'Invalid rule sequence.');
     byCode.set(rule.code, rule);
   }
   const graph = new Map();
   for (const rule of rules) {
-    const refs = dependencies(rule).filter(code => code !== 'CONTRACT_WAGE');
+    const refs = dependencies(rule).filter(code => !RUNTIME_INPUTS.has(code));
     for (const code of refs) {
       if (!byCode.has(code) || (rule.active !== false && byCode.get(code).active === false)) fail('SAL-003', `Missing active dependency: ${code}.`);
     }
@@ -132,13 +137,15 @@ function validateDependencies(rules) {
   return [...rules].sort((a, b) => a.sequence - b.sequence || a.code.localeCompare(b.code));
 }
 
-function calculateRules(rules, inputs) {
+function calculateRules(rules, inputs, normalizeAmount = value => value) {
   const active = rules.filter(rule => rule.active !== false);
   if (!active.length) throw new AppError('STR-004', 'Salary structure has no active rules.', 422, 'BLOCKING');
   const ordered = validateDependencies(active);
   // Do not allow caller-supplied component values to bypass rule dependencies.
   const context = Object.create(null);
-  if (Object.hasOwn(inputs, 'CONTRACT_WAGE')) context.CONTRACT_WAGE = inputs.CONTRACT_WAGE;
+  for (const key of RUNTIME_INPUTS) {
+    if (Object.hasOwn(inputs, key)) context[key] = inputs[key];
+  }
   return ordered.map(rule => {
     let amount;
     if (rule.calculationType === 'FIXED') amount = rule.fixedAmount;
@@ -149,9 +156,11 @@ function calculateRules(rules, inputs) {
     } else amount = evaluateFormula(rule.formula, context);
     if (typeof amount !== 'number' || !Number.isFinite(amount)) fail('SAL-008', 'Rule produced an invalid numeric result.');
     if ((rule.calculationType === 'FIXED' && amount < 0) || (rule.calculationType === 'PERCENTAGE' && rule.percentage < 0)) fail('SAL-009', 'Configured amount or percentage cannot be negative.');
+    amount = normalizeAmount(amount);
+    if (typeof amount !== 'number' || !Number.isFinite(amount)) fail('SAL-008', 'Rule produced an invalid normalized result.');
     context[rule.code] = amount;
     return { code: rule.code, category: rule.category, sequence: rule.sequence, amount };
   });
 }
 
-module.exports = { parseFormula, evaluateFormula, dependencies, validateDependencies, calculateRules };
+module.exports = { RUNTIME_INPUTS, parseFormula, evaluateFormula, dependencies, validateDependencies, calculateRules };

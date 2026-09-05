@@ -1,0 +1,10 @@
+'use strict';
+const mongoose = require('mongoose');
+const AppError = require('../../core/errors/AppError');
+const fail = (message, field) => { throw new AppError('VALIDATION_ERROR', message, 400, 'ERROR', { field }); };
+const id = (value, field) => { if (typeof value !== 'string' || !mongoose.isObjectIdOrHexString(value)) fail(`Invalid ${field}.`, field); return value; };
+const date = (value, field) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) fail(`${field} must use YYYY-MM-DD.`, field); return new Date(`${value}T00:00:00.000Z`); };
+function list({ query }) { const allowed = ['payrunId', 'employeeId', 'status', 'from', 'to', 'page', 'limit']; const unknown = Object.keys(query).find(key => !allowed.includes(key)); if (unknown) fail('Unexpected query field.', unknown); const result = { page: Number(query.page || 1), limit: Number(query.limit || 20) }; if (!Number.isInteger(result.page) || result.page < 1 || !Number.isInteger(result.limit) || result.limit < 1 || result.limit > 100) fail('Invalid pagination.', 'page'); for (const field of ['payrunId', 'employeeId']) if (query[field]) result[field] = id(query[field], field); if (query.status) { if (!['COMPUTED', 'VALIDATED', 'PAID'].includes(query.status)) fail('Invalid Payslip status.', 'status'); result.status = query.status; } if (query.from) result.from = date(query.from, 'from'); if (query.to) result.to = date(query.to, 'to'); return { query: result }; }
+function ownList({ query }) { const unknown = Object.keys(query).find(key => !['page', 'limit'].includes(key)); if (unknown) fail('Unexpected query field.', unknown); const result = { page: Number(query.page || 1), limit: Number(query.limit || 20) }; if (!Number.isInteger(result.page) || result.page < 1 || !Number.isInteger(result.limit) || result.limit < 1 || result.limit > 100) fail('Invalid pagination.', 'page'); return { query: result }; }
+const params = ({ params: value }) => ({ params: { id: id(value.id, 'id') } });
+module.exports = { list, ownList, params };

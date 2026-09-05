@@ -165,6 +165,13 @@ function createContractService({
     return { deleted: true };
   }
 
+  async function findAttentionForReporting({ employeeIds, through } = {}) {
+    const filter = { status: { $in: [CONTRACT_STATUSES.DRAFT, CONTRACT_STATUSES.RUNNING] } };
+    if (employeeIds) filter.employee = { $in: employeeIds };
+    if (through) filter.$or = [{ status: CONTRACT_STATUSES.DRAFT }, { status: CONTRACT_STATUSES.RUNNING, endDate: { $ne: null, $lte: through } }];
+    return Model.find(filter);
+  }
+
   return {
     listContracts,
     createContract,
@@ -177,6 +184,7 @@ function createContractService({
     resolveApplicableContract: resolver.resolveApplicableContract,
     findApplicableContracts: resolver.findApplicableContracts,
     findOverlaps: resolver.findOverlappingApplicableContracts,
+    findAttentionForReporting,
     listEmployeeContracts: (employeeId, options = {}) => listContracts({
       ...options,
       employeeId,
