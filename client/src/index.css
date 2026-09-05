@@ -146,6 +146,20 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
 .checkbox-row input { width: 17px; height: 17px; accent-color: var(--primary); }
 .bank-fields { margin-top: 1rem; }
 .employee-filters { padding: 1rem; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(145px, 1fr)); gap: .7rem; }
+.employee-view-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 1rem; border-bottom: 1px solid var(--border); color: var(--muted); font-size: .82rem; font-weight: 650; }
+.view-toggle { display: inline-flex; gap: .25rem; padding: .2rem; border: 1px solid var(--border); border-radius: 8px; background: #f8f9fb; }
+.view-toggle button { border: 0; border-radius: 6px; padding: .45rem .75rem; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
+.view-toggle button.active { background: var(--primary); color: #fff; }
+.employee-kanban { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: 1rem; }
+.employee-card { min-width: 0; padding: 1.1rem; border: 1px solid var(--border); border-radius: 12px; background: #fff; display: grid; gap: 1rem; }
+.employee-card-top { display: flex; align-items: center; gap: .8rem; }
+.employee-avatar { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 42px; border: 1px solid #aebcf0; border-radius: 10px; background: #f0f3ff; color: #3157d5; font-size: .8rem; font-weight: 800; }
+.employee-card-top > div { min-width: 0; display: grid; gap: .2rem; }
+.employee-card-name { color: #101828; font-weight: 750; text-decoration: none; overflow-wrap: anywhere; }
+.employee-card-name:hover { color: var(--primary); }
+.employee-card-top small { color: var(--muted); overflow-wrap: anywhere; }
+.employee-card-meta { display: flex; align-items: center; justify-content: space-between; gap: .7rem; color: var(--muted); font-size: .82rem; }
+.employee-card-actions { display: flex; gap: .8rem; padding-top: .75rem; border-top: 1px solid #eaecf0; }
 .employee-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .detail-section { padding: 1.25rem; }
 .detail-section h2 { margin-bottom: 1rem; font-size: 1rem; }
@@ -286,6 +300,7 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
   .app-main { margin-left: 0; }
   .menu-button { display: block; border: 0; background: none; color: #344054; font-size: 1.3rem; cursor: pointer; }
   .form-grid, .filters, .schedule-form-top, .employee-filters, .contract-filters, .operation-filters, .dashboard-filters { grid-template-columns: 1fr; }
+  .employee-kanban { grid-template-columns: 1fr; }
   .employee-hub { align-items: stretch; flex-direction: column; }
   .section-toolbar { align-items: stretch; flex-direction: column; }
   .payslip-summary { grid-template-columns: 1fr; }
