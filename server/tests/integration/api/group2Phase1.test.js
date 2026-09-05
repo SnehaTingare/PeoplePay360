@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const express = require('express');
 const createTimeOffRouter = require('../../../src/modules/timeOff/timeOff.routes');
 const createSalaryConfigRouter = require('../../../src/modules/salaryConfig/salaryConfig.routes');
+const createAttendanceRouter = require('../../../src/modules/attendance/attendance.routes');
 const errorHandler = require('../../../src/core/middleware/errorHandler');
 const roles = require('../../../src/core/constants/roles');
 const id = 'a'.repeat(24);
@@ -27,7 +28,7 @@ async function fixture(t) {
     if (req.headers['x-test-role']) req.user = { role: req.headers['x-test-role'], status: req.headers['x-test-status'] || 'ACTIVE' };
     next();
   };
-  app.use('/api/v1', createTimeOffRouter({ authenticate, service }), createSalaryConfigRouter({ authenticate, service }));
+  app.use('/api/v1', createTimeOffRouter({ authenticate, service }), createSalaryConfigRouter({ authenticate, service }), createAttendanceRouter({ authenticate, service }));
   app.use(errorHandler);
   const server = app.listen(0, '127.0.0.1');
   await new Promise((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
@@ -117,4 +118,50 @@ test('unexpected errors are sanitized', () => {
   errorHandler(new Error('mongodb://secret'), {}, res, () => {});
   assert.equal(result.code, 'INTERNAL_ERROR');
   assert.ok(!JSON.stringify(result).includes('secret'));
+});
+
+
+test('Phase 2 route permissions and Employee identity payload restrictions', async t => {
+  const { request, calls } = await fixture(t);
+  const all = Object.values(roles);
+  const managers = all.filter(role => role !== 'EMPLOYEE');
+  const allocation = { employeeId: id, timeOffTypeId: id, allocatedAmount: 10, validFrom: '2026-01-01', validUntil: '2026-12-31' };
+  const leave = { timeOffTypeId: id, startDate: '2026-09-07', endDate: '2026-09-08', reason: 'Leave' };
+  const endpoints = [
+    ['GET', '/attendance/me', undefined, ['EMPLOYEE']],
+    ['POST', '/attendance/check-in', {}, ['EMPLOYEE']],
+    ['POST', '/attendance/check-out', {}, ['EMPLOYEE']],
+    ['GET', '/attendance', undefined, managers],
+    ['POST', '/attendance', { employeeId: id, checkIn: '2026-09-07T09:00:00Z', checkOut: '2026-09-07T18:00:00Z' }, managers],
+    ['GET', `/attendance/${id}`, undefined, all],
+    ['PATCH', `/attendance/${id}`, { correctionReason: 'Confirmed', checkOut: '2026-09-07T18:00:00Z' }, managers],
+    ['GET', '/time-off/allocations/me', undefined, ['EMPLOYEE']],
+    ['GET', '/time-off/allocations', undefined, managers],
+    ['POST', '/time-off/allocations', allocation, managers],
+    ['GET', `/time-off/allocations/${id}`, undefined, all],
+    ['PATCH', `/time-off/allocations/${id}`, { allocatedAmount: 12 }, managers],
+    ['POST', `/time-off/allocations/${id}/approve`, undefined, managers],
+    ['POST', `/time-off/allocations/${id}/cancel`, undefined, managers],
+    ['DELETE', `/time-off/allocations/${id}`, undefined, managers],
+    ['GET', '/time-off/requests/me', undefined, ['EMPLOYEE']],
+    ['GET', '/time-off/requests', undefined, managers],
+    ['GET', `/time-off/requests/${id}`, undefined, all],
+    ['POST', `/time-off/requests/${id}/approve`, undefined, managers],
+    ['POST', `/time-off/requests/${id}/refuse`, { comment: 'Staffing' }, managers],
+  ];
+  for (const [method, path, body, allowed] of endpoints) {
+    for (const role of all) {
+      const before = calls.length;
+      const result = await request(role, method, path, body);
+      const accepted = allowed.includes(role);
+      assert.equal(result.status < 300, accepted, `${role} ${method} ${path}`);
+      assert.equal(calls.length, before + (accepted ? 1 : 0));
+    }
+  }
+  for (const role of all) {
+    const body = role === 'EMPLOYEE' ? leave : { ...leave, employeeId: id };
+    assert.equal((await request(role, 'POST', '/time-off/requests', body)).status, 201);
+  }
+  assert.equal((await request('EMPLOYEE', 'POST', '/attendance/check-in', { employeeId: id })).status, 400);
+  assert.equal((await request('EMPLOYEE', 'POST', '/time-off/requests', { ...leave, employeeId: id })).status, 400);
 });

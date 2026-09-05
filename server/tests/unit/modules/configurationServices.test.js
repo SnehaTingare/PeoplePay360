@@ -52,9 +52,11 @@ test('employee type reads and future-use lookup exclude inactive records', async
 test('type policy changes preserve history and require a connected check', async () => {
   const store = createStore();
   const Type = store.model(['code']);
-  const service = createTimeOffService({ Type });
+  const Request = store.model([]);
+  const service = createTimeOffService({ Type, Request, Allocation: store.model([]) });
   const type = await service.createType(policy);
-  await rejectsCode(() => service.updateType(type._id, { unit: 'HOURS' }), 'DEPENDENCY_UNAVAILABLE');
+  await Request.create({ timeOffType: type._id });
+  await rejectsCode(() => service.updateType(type._id, { unit: 'HOURS' }), 'RESOURCE_CONFLICT');
   const historical = createTimeOffService({ Type, hasTypeHistory: async () => true });
   await rejectsCode(() => historical.updateType(type._id, { unit: 'HOURS' }), 'RESOURCE_CONFLICT');
   const unused = createTimeOffService({ Type, hasTypeHistory: async () => false });
