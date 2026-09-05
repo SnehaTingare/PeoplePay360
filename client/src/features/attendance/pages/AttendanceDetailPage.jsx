@@ -21,6 +21,14 @@ const toLocalDateTimeInput = (value) => {
 }
 
 const toIsoTimestamp = (value) => (value ? new Date(value).toISOString() : undefined)
+const oneMinuteAfter = (value) => {
+  if (!value) return undefined
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return undefined
+  date.setMinutes(date.getMinutes() + 1)
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+  return localDate.toISOString().slice(0, 16)
+}
 
 function Item({ label, children }) { return <div className="detail-item"><dt>{label}</dt><dd>{children || 'Not available'}</dd></div> }
 
@@ -40,8 +48,14 @@ export default function AttendanceDetailPage() {
   }
   const save = async (event) => {
     event.preventDefault(); setBusy(true); setError('')
+    if (!form.checkIn || !Number.isFinite(new Date(form.checkIn).getTime())) {
+      setError('Please select a valid check-in time.'); setBusy(false); return
+    }
+    if (form.checkOut && !Number.isFinite(new Date(form.checkOut).getTime())) {
+      setError('Please select a valid check-out time.'); setBusy(false); return
+    }
     if (form.checkIn && form.checkOut && new Date(form.checkOut).getTime() <= new Date(form.checkIn).getTime()) {
-      setError('Check-out must be later than check-in.'); setBusy(false); return
+      setError('Check-out time must be after check-in time.'); setBusy(false); return
     }
     const notesError = optionalText(form.notes, 'Notes', 2000)
     if (notesError) {
@@ -65,6 +79,6 @@ export default function AttendanceDetailPage() {
   if (!record && !error) return <LoadingState label="Loading attendance record..." />
   if (!record) return <section className="center-message"><h1>Unable to load attendance</h1><p>{error}</p><Link className="button" to="/attendance">Back</Link></section>
   return <><ErrorBanner message={error} /><header className="page-header"><div><p className="eyebrow">Attendance / {formatDate(record.date)}</p><h1>Attendance Detail</h1><StatusBadge value={record.status} /></div><div className="header-actions"><Link className="button button--secondary" to="/attendance">Back</Link>{canCorrect && !editing && <button className="button" onClick={begin}>Correct Attendance</button>}</div></header>
-    {editing ? <form className="panel inline-form" onSubmit={save}><h2>Correction</h2><div className="form-grid"><FormField label="Check in *"><input required type="datetime-local" value={form.checkIn} onChange={(event) => setForm({ ...form, checkIn: event.target.value })} /></FormField><FormField label="Check out"><input type="datetime-local" value={form.checkOut} onChange={(event) => setForm({ ...form, checkOut: event.target.value })} /></FormField><FormField label="Notes"><textarea rows="3" maxLength={2000} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /></FormField><FormField label="Correction reason *"><textarea required rows="3" maxLength={2000} value={form.correctionReason} onChange={(event) => setForm({ ...form, correctionReason: event.target.value })} /></FormField></div><div className="form-actions"><button type="button" className="button button--secondary" onClick={() => setEditing(false)}>Cancel</button><button className="button" disabled={busy}>{busy ? 'Saving...' : 'Save correction'}</button></div></form> : <section className="panel detail-section"><dl><Item label="Date">{formatDate(record.date)}</Item><Item label="Check in">{formatDateTime(record.checkIn)}</Item><Item label="Check out">{formatDateTime(record.checkOut)}</Item><Item label="Worked hours">{Number(record.workedHours || 0).toFixed(2)}</Item><Item label="Manual edit">{record.manualEdit ? 'Yes' : 'No'}</Item><Item label="Notes">{record.notes}</Item><Item label="Correction reason">{record.correctionReason}</Item></dl></section>}
+    {editing ? <form className="panel inline-form" onSubmit={save}><h2>Correction</h2><div className="form-grid"><FormField label="Check in *"><input required type="datetime-local" value={form.checkIn} onChange={(event) => setForm({ ...form, checkIn: event.target.value })} /></FormField><FormField label="Check out"><input type="datetime-local" min={oneMinuteAfter(form.checkIn)} value={form.checkOut} onChange={(event) => setForm({ ...form, checkOut: event.target.value })} /></FormField><FormField label="Notes"><textarea rows="3" maxLength={2000} value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /><small>{form.notes.length}/2000 characters</small></FormField><FormField label="Correction reason *"><textarea required rows="3" maxLength={2000} value={form.correctionReason} onChange={(event) => setForm({ ...form, correctionReason: event.target.value })} /><small>{form.correctionReason.length}/2000 characters</small></FormField></div><div className="form-actions"><button type="button" className="button button--secondary" onClick={() => setEditing(false)}>Cancel</button><button className="button" disabled={busy}>{busy ? 'Saving...' : 'Save correction'}</button></div></form> : <section className="panel detail-section"><dl><Item label="Date">{formatDate(record.date)}</Item><Item label="Check in">{formatDateTime(record.checkIn)}</Item><Item label="Check out">{formatDateTime(record.checkOut)}</Item><Item label="Worked hours">{Number(record.workedHours || 0).toFixed(2)}</Item><Item label="Manual edit">{record.manualEdit ? 'Yes' : 'No'}</Item><Item label="Notes">{record.notes}</Item><Item label="Correction reason">{record.correctionReason}</Item></dl></section>}
   </>
 }

@@ -15,7 +15,17 @@ export default function useEmployeeReferences() {
       schedulesApi.list({ page: 1, limit: 100 }),
       employeesApi.list({ employmentStatus: 'ACTIVE', page: 1, limit: 100 }),
     ]).then(([departments, schedules, managers]) => {
-      if (active) setData({ departments: departments.data, schedules: schedules.data, managers: managers.data })
+      if (active) {
+        setData({
+          departments: departments.data,
+          schedules: schedules.data,
+          managers: managers.data.filter(
+            (employee) =>
+              employee.employmentStatus === 'ACTIVE' &&
+              employee.jobPosition === 'Manager'
+          ),
+        })
+      }
     }).catch((requestError) => { if (active) setError(getApiError(requestError).message) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }

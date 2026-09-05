@@ -8,11 +8,16 @@ exports.listUsers = async (req, res) => response.collection(res, await service.l
 exports.createUser = async (req, res) => response.resource(res, await service.createUser(req.body), 201);
 exports.getUser = async (req, res) => response.resource(res, await service.getUser(req.params.id));
 exports.updateUser = async (req, res) => response.resource(res, await service.updateUser(req.params.id, req.body));
-exports.changeRole = async (req, res) => response.resource(res, await service.changeRole(req.params.id, req.body.role));
+exports.changeRole = async (req, res) => response.resource(
+  res,
+  await service.changeRole(req.params.id, req.body.role, req.user),
+);
 exports.activateUser = async (req, res) => response.resource(
-  res, await service.setAccountStatus(req.params.id, ACCOUNT_STATUSES.ACTIVE),
+  res,
+  await service.setAccountStatus(req.params.id, ACCOUNT_STATUSES.ACTIVE, req.user),
 );
 exports.deactivateUser = async (req, res) => response.resource(
-  res, await service.setAccountStatus(req.params.id, ACCOUNT_STATUSES.INACTIVE),
+  res,
+  await service.setAccountStatus(req.params.id, ACCOUNT_STATUSES.INACTIVE, req.user),
 );
 exports.resetPassword = async (req, res) => response.resource(res, await service.resetPassword(req.params.id));

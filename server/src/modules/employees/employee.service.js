@@ -75,8 +75,7 @@ function createEmployeeService({
     if (input.managerId) {
       if (
         employeeId &&
-        String(input.managerId) ===
-          String(employeeId)
+        String(input.managerId) === String(employeeId)
       ) {
         throw new AppError(
           'EMP-002',
@@ -85,7 +84,18 @@ function createEmployeeService({
         );
       }
 
-      await getEmployee(input.managerId);
+      const manager = await getEmployee(input.managerId);
+
+      if (
+        manager.employmentStatus !== 'ACTIVE' ||
+        manager.jobPosition !== 'Manager'
+      ) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'Manager must be an active employee with job position Manager.',
+          422
+        );
+      }
     }
   }
 
