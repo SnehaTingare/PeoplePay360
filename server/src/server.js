@@ -11,7 +11,7 @@ async function startServer() {
   await bootstrapAdmin.provision();
   return new Promise((resolve, reject) => {
     const server = app.listen(env.port, error => {
-      if (error) {
+      if (error){
         reject(error);
         return;
       }
