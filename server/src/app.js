@@ -1,23 +1,18 @@
-const express = require("express");
-const cors = require("cors");
+'use strict';
 
-const routes = require("./routes");
+const cors = require('cors');
+const express = require('express');
+const apiRouter = require('./routes');
+const notFound = require('./core/middleware/notFound');
+const errorHandler = require('./core/middleware/errorHandler');
 
 const app = express();
 
-// Middleware
+app.disable('x-powered-by');
 app.use(cors());
 app.use(express.json());
-
-// Health check route
-app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "PeoplePay360 API is running",
-  });
-});
-
-// API routes
-app.use("/api/v1/", routes);
+app.use('/api/v1', apiRouter);
+app.use(notFound);
+app.use(errorHandler);
 
 module.exports = app;

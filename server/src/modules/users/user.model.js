@@ -1,99 +1,33 @@
-const mongoose = require("mongoose");
+'use strict';
 
-const userSchema = new mongoose.Schema(
-  {
-    uniqueId: {
-      type: String,
-      required: [true, "Unique ID is required"],
-      trim: true,
-      uppercase: true,
-    },
+const mongoose = require('mongoose');
+const roles = require('../../core/constants/roles');
+const { ACCOUNT_STATUSES, ACCOUNT_STATUS_VALUES } = require('../../core/constants/statuses');
 
-    firstName: {
-      type: String,
-      required: [true, "First name is required"],
-      trim: true,
-      maxlength: [50, "First name cannot exceed 50 characters"],
-    },
-
-    lastName: {
-      type: String,
-      required: [true, "Last name is required"],
-      trim: true,
-      maxlength: [50, "Last name cannot exceed 50 characters"],
-    },
-
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      trim: true,
-      lowercase: true,
-    },
-
-    passwordHash: {
-      type: String,
-      required: [true, "Password hash is required"],
-      select: false,
-    },
-
-    role: {
-      type: String,
-      enum: [
-        "EMPLOYEE",
-        "HR_MANAGER",
-        "HR_PAYROLL_USER",
-        "HR_PAYROLL_MANAGER",
-        "ADMIN",
-      ],
-      default: "EMPLOYEE",
-      required: true,
-    },
-
-    accountStatus: {
-      type: String,
-      enum: ["ACTIVE", "INACTIVE"],
-      default: "ACTIVE",
-    },
-
-    employee: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Employee",
-      default: null,
-    },
-
-    mustChangePassword: {
-      type: Boolean,
-      default: true,
-    },
-
-    lastLogin: {
-      type: Date,
-      default: null,
+const schema = new mongoose.Schema({
+  uniqueId: { type: String, required: true, unique: true, trim: true },
+  firstName: { type: String, required: true, trim: true },
+  lastName: { type: String, required: true, trim: true },
+  email: { type: String, required: true, trim: true, lowercase: true },
+  passwordHash: { type: String, required: true, select: false },
+  role: { type: String, required: true, enum: Object.values(roles) },
+  accountStatus: { type: String, required: true, enum: ACCOUNT_STATUS_VALUES, default: ACCOUNT_STATUSES.ACTIVE },
+  employeeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', default: null },
+  mustChangePassword: { type: Boolean, required: true, default: true },
+  lastLogin: { type: Date, default: null },
+}, {
+  timestamps: true,
+  toJSON: {
+    transform(document, value) {
+      value.id = String(value._id);
+      delete value._id;
+      delete value.__v;
+      delete value.passwordHash;
+      return value;
     },
   },
-  {
-    timestamps: true,
-  }
-);
+});
 
-/*
-|--------------------------------------------------------------------------
-| Indexes
-|--------------------------------------------------------------------------
-*/
+schema.index({ email: 1 }, { unique: true });
 
-userSchema.index({ uniqueId: 1 }, { unique: true });
-
-userSchema.index({ email: 1 }, { unique: true });
-
-userSchema.index(
-  { employee: 1 },
-  {
-    unique: true,
-    sparse: true,
-  }
-);
-
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+module.exports = mongoose.models.User || mongoose.model('User', schema);

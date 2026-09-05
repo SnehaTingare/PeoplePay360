@@ -1,0 +1,20 @@
+import { useState } from 'react'
+
+export default function TemporaryPasswordDialog({ result, title = 'User created successfully', onDone }) {
+  const [copied, setCopied] = useState(false)
+  if (!result) return null
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(result.temporaryPassword)
+    setCopied(true)
+  }
+
+  return <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-labelledby="password-title">
+    <div className="success-mark">✓</div>
+    <h2 id="password-title">{title}</h2>
+    <p className="muted">This temporary password is shown only once.</p>
+    <dl className="credential-box"><div><dt>Email</dt><dd>{result.user.email}</dd></div><div><dt>Temporary password</dt><dd className="temporary-password">{result.temporaryPassword}</dd></div></dl>
+    <div className="alert alert--warning">Copy and share this password securely now. It cannot be retrieved later.</div>
+    <div className="modal-actions"><button className="button button--secondary" onClick={copy}>{copied ? 'Copied' : 'Copy password'}</button><button className="button" onClick={onDone}>Done</button></div>
+  </section></div>
+}

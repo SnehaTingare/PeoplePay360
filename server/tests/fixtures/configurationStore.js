@@ -8,15 +8,26 @@ function createStore() {
   const matches = (row, filter) => Object.entries(filter).every(([key, value]) => {
     if (key === '$or') return value.some(clause => matches(row, clause));
     if (value instanceof RegExp) return value.test(row[key]);
+    if (value && typeof value === 'object' && !(value instanceof Date)) {
+      return Object.entries(value).every(([operator, expected]) => {
+        if (operator === '$in') return expected.map(String).includes(String(row[key]));
+        if (operator === '$lt') return row[key] < expected;
+        if (operator === '$lte') return row[key] <= expected;
+        if (operator === '$gt') return row[key] > expected;
+        if (operator === '$gte') return row[key] >= expected;
+        if (operator === '$ne') return String(row[key]) !== String(expected);
+        throw new Error(`Unsupported test query operator: ${operator}`);
+      });
+    }
     return String(row[key]) === String(value);
   });
 
-  function model(unique) {
+  function model(unique, partial = () => true) {
     const rows = new Map();
     stores.push(rows);
     function duplicate(candidate) {
       for (const row of rows.values()) {
-        if (row._id !== candidate._id && unique.every(key => row[key] === candidate[key])) {
+        if (unique.length && partial(row) && partial(candidate) && row._id !== candidate._id && unique.every(key => row[key] === candidate[key])) {
           const error = new Error('duplicate'); error.code = 11000; throw error;
         }
       }
@@ -61,7 +72,7 @@ function createStore() {
       rows,
       async create(input) {
         if (Array.isArray(input)) return Promise.all(input.map(row => this.create(row)));
-        const row = { active: true, _id: (nextId++).toString(16).padStart(24, '0'), ...input };
+        const row = { active: true, __v: 0, _id: (nextId++).toString(16).padStart(24, '0'), ...input };
         duplicate(row); rows.set(row._id, structuredClone(row)); return document(row);
       },
       find(filter) { return query(() => [...rows.values()].filter(row => matches(row, filter))); },
@@ -69,8 +80,25 @@ function createStore() {
       findById(id) { return query(() => document(rows.get(id))); },
       exists(filter) { return query(() => [...rows.values()].some(row => matches(row, filter))); },
       async countDocuments(filter) { return [...rows.values()].filter(row => matches(row, filter)).length; },
-      async findOneAndUpdate(filter) { return document([...rows.values()].find(row => matches(row, filter))); },
-      async deleteOne(filter) { for (const [id, row] of rows) if (matches(row, filter)) rows.delete(id); },
+      async findOneAndUpdate(filter, update = {}) {
+        const row = [...rows.values()].find(row => matches(row, filter));
+        if (!row) return null;
+        const candidate = structuredClone(row);
+        Object.assign(candidate, update.$set || {});
+        for (const [key, amount] of Object.entries(update.$inc || {})) candidate[key] = (candidate[key] || 0) + amount;
+        duplicate(candidate);
+        rows.set(candidate._id, candidate);
+        return document(candidate);
+      },
+      async updateMany(filter, update) {
+        const matching = [...rows.values()].filter(row => matches(row, filter));
+        for (const row of matching) await this.findOneAndUpdate({ _id: row._id }, update);
+        return { modifiedCount: matching.length };
+      },
+      async deleteOne(filter) {
+        for (const [id, row] of rows) if (matches(row, filter)) { rows.delete(id); return { deletedCount: 1 }; }
+        return { deletedCount: 0 };
+      },
     };
   }
   async function transaction(work) {
