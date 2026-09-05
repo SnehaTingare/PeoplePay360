@@ -22,6 +22,19 @@ function determineStatus(checkIn, checkOut, schedule) {
   if (minutes > schedule.expectedMinutes) return 'OVERTIME';
   return 'PRESENT';
 }
+function attendanceConflict() {
+  return new AppError(
+    'ATT-003',
+    'Attendance already exists for this employee on the selected date.',
+    409
+  );
+}
+function attendancePersistenceError(error) {
+  if (error?.code === 11000) {
+    return attendanceConflict();
+  }
+  return persistenceError(error, 'ATT-003');
+}
 
 function createAttendanceService({ Model = Attendance, employees, schedules, now = () => new Date() } = {}) {
   const access = createEmployeeAccess(employees);
@@ -43,16 +56,52 @@ function createAttendanceService({ Model = Attendance, employees, schedules, now
   }
   async function checkIn(actor, body = {}) {
     validation.empty(body);
-    const employee = access.active(await access.own(actor));
+
+    const employee = access.active(
+      await access.own(actor)
+    );
+
     const timestamp = now();
-    const attendanceDate = dates.dateOnly(timestamp.toISOString().slice(0, 10));
-    const schedule = await scheduleAccess.attendance(employee.id, timestamp);
-    if (timestamp < schedule.start || timestamp > schedule.end) {
-      throw new AppError('VALIDATION_ERROR', 'Check-in is allowed only during scheduled working hours.', 422);
+
+    const schedule = await scheduleAccess.attendance(
+      employee.id,
+      timestamp
+    );
+
+    const attendanceDate = schedule.date;
+
+    if (
+      timestamp < schedule.start ||
+      timestamp > schedule.end
+    ) {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        'Check-in is allowed only during scheduled working hours.',
+        422
+      );
     }
-    if (await Model.exists({ employee: employee.id, date: attendanceDate })) throw new AppError('ATT-003', 'Attendance already exists for today.', 409);
-    try { return await Model.create({ employee: employee.id, date: attendanceDate, checkIn: timestamp, status: 'OPEN', workedMinutes: 0, workedHours: 0 }); }
-    catch (error) { throw persistenceError(error, 'ATT-003'); }
+
+    if (
+      await Model.exists({
+        employee: employee.id,
+        date: attendanceDate,
+      })
+    ) {
+      throw attendanceConflict();
+    }
+
+    try {
+      return await Model.create({
+        employee: employee.id,
+        date: attendanceDate,
+        checkIn: timestamp,
+        status: 'OPEN',
+        workedMinutes: 0,
+        workedHours: 0,
+      });
+    } catch (error) {
+      throw attendancePersistenceError(error);
+    }
   }
   async function checkOut(actor, body = {}) {
     validation.empty(body);
@@ -81,7 +130,11 @@ function createAttendanceService({ Model = Attendance, employees, schedules, now
     else if (options.employeeId) { await access.get(options.employeeId); filter.employee = options.employeeId; }
     if (options.departmentId) {
       const ids = await access.departmentIds(options.departmentId);
-      filter.employee = { $in: options.employeeId ? ids.filter(id => id === options.employeeId) : ids };
+      filter.employee = {
+        $in: options.employeeId
+          ? ids.filter((id) => String(id) === String(options.employeeId))
+          : ids,
+      };
     }
     if (options.status) filter.status = options.status;
     dates.filter(options, 'date', filter);
@@ -89,13 +142,41 @@ function createAttendanceService({ Model = Attendance, employees, schedules, now
   }
   async function createManualAttendance(body, actor) {
     requireActor(actor, managers, 'ATT-005');
+
     const input = validation.manualInput(body);
-    access.active(await access.get(input.employeeId));
-    const derived = await derive(input.employeeId, input.checkIn, input.checkOut);
+
+    access.active(
+      await access.get(input.employeeId)
+    );
+
+    const derived = await derive(
+      input.employeeId,
+      input.checkIn,
+      input.checkOut
+    );
+
+    const exists = await Model.exists({
+      employee: input.employeeId,
+      date: derived.date,
+    });
+
+    if (exists) {
+      throw attendanceConflict();
+    }
+
     try {
-      return await Model.create({ ...derived, employee: input.employeeId, checkIn: input.checkIn,
-        checkOut: input.checkOut, notes: input.notes, manualEdit: true, editedBy: actorId(actor) });
-    } catch (error) { throw persistenceError(error, 'ATT-003'); }
+      return await Model.create({
+        ...derived,
+        employee: input.employeeId,
+        checkIn: input.checkIn,
+        checkOut: input.checkOut,
+        notes: input.notes,
+        manualEdit: true,
+        editedBy: actorId(actor),
+      });
+    } catch (error) {
+      throw attendancePersistenceError(error);
+    }
   }
   async function correctAttendance(id, body, actor) {
     requireActor(actor, managers, 'ATT-005');
@@ -106,7 +187,7 @@ function createAttendanceService({ Model = Attendance, employees, schedules, now
     const derived = await derive(String(record.employee), checkIn, checkOut);
     record.set({ ...input, ...derived, manualEdit: true, editedBy: actorId(actor) });
     try { return await record.save(); }
-    catch (error) { throw persistenceError(error, 'ATT-003'); }
+    catch (error) { throw attendancePersistenceError(error); }
   }
   // Internal job contract: caller supplies the cutoff according to the shift
   // calendar. No arbitrary expiry duration or additional public endpoint.
