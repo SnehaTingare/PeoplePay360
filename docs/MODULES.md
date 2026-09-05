@@ -85,8 +85,8 @@ Provision system login accounts and enforce frozen roles.
 
 ## Features
 - Bootstrap first Admin
-- Create user
-- Employee-account linkage
+- Create internal/admin user
+- Controlled Employee-account provisioning service contract
 - Assign role
 - Activate/deactivate account
 - Temporary credential/invitation flow
@@ -94,6 +94,7 @@ Provision system login accounts and enforce frozen roles.
 ## Backend services/methods
 - `BootstrapAdminService.ensureInitialAdmin()`
 - `UserService.createUser(input, actor)`
+- `UserService.provisionEmployeeAccount(input)` (called by Employee onboarding only)
 - `UserService.assignRole(userId, role, actor)`
 - `UserService.activate(userId, actor)`
 - `UserService.deactivate(userId, actor)`
@@ -121,22 +122,22 @@ Provision system login accounts and enforce frozen roles.
 - `/users/*`
 
 ## Dependencies
-- Employee Master only for optional link validation
 - Authentication/security utilities
 
 ## Validations
-- `USR-001..005`
+- `USR-001..006`
 - only Admin can manage users/roles
+- standalone User creation rejects role `EMPLOYEE`
 
 ## Edge cases
 - duplicate email
 - Admin bootstrapped twice
 - deactivated user
-- user created before Employee link exists
+- Employee provisioning cleanup after a failed onboarding attempt
 
 ## Completion checklist
 - [ ] first Admin bootstraps securely
-- [ ] Admin can create all five role types
+- [ ] Admin can create internal/admin role types
 - [ ] duplicate email rejected
 - [ ] role assignment backend-protected
 - [ ] temp password/activation delivered safely
@@ -155,6 +156,7 @@ Store the central HR record and provide navigation/context to all related employ
 - Department/manager/job/schedule/status fields
 - Related counts: Contracts, Attendance, Time Off, Allocations
 - Active/inactive lifecycle
+- Automatic EMPLOYEE User provisioning with one-time temporary credential
 
 ## Backend services/methods
 - `EmployeeService.createEmployee`
@@ -164,6 +166,7 @@ Store the central HR record and provide navigation/context to all related employ
 - `EmployeeService.getRelatedCounts`
 - `EmployeeService.deactivateEmployee`
 - `EmployeeService.assertOwnership`
+- `EmployeeService.resolveEmployeeForUser`
 
 ## Frontend pages/components
 - EmployeeListPage
@@ -185,6 +188,7 @@ Store the central HR record and provide navigation/context to all related employ
 - bank details
 - status ACTIVE/INACTIVE
 - dateOfJoining
+- reciprocal User link
 
 ## APIs
 - `GET /employees/me`
@@ -195,6 +199,7 @@ Store the central HR record and provide navigation/context to all related employ
 ## Dependencies
 - Working Schedules for schedule reference validation
 - self-reference for manager
+- Users service for Employee account provisioning and link/status synchronization
 
 ## Validations
 - `EMP-001..005`

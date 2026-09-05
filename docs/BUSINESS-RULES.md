@@ -106,22 +106,28 @@ Recommended flow:
 4. Do not expose public Admin registration.
 5. Optionally force first-login password change.
 
-### 3.2 Creating Normal Users
+### 3.2 Creating Internal System Users
 
-Admin creates:
-- Name
-- Email
-- Role
-- Active status
-- Optional linked Employee
+`POST /users` is the Admin-only account-management workflow for these roles:
 
-The system should:
-1. Generate a temporary password or activation token.
-2. Store only the hash/token.
-3. Send credentials by email or show the temporary password only once.
-4. Force password change on first login.
+```text
+ADMIN
+HR_MANAGER
+HR_PAYROLL_USER
+HR_PAYROLL_MANAGER
+```
 
-### 3.3 Password Rules
+It must not create normal `EMPLOYEE` accounts or accept manual Employee linkage. Only `ADMIN` manages these internal accounts and their roles.
+
+### 3.3 Employee Account Provisioning
+
+`POST /employees` is the canonical onboarding workflow for normal Employees and remains available to the existing authorized HR/Admin roles.
+
+Creating an Employee internally provisions exactly one User with the Employee email, role `EMPLOYEE`, account status `ACTIVE`, and `mustChangePassword = true`. This controlled internal provisioning does not grant HR Managers or payroll roles general User-management permission.
+
+The system must generate the temporary password securely, persist only its hash, and return/display the plaintext credential only once in the successful Employee-creation response. `Employee.user` and `User.employeeId` must form a reciprocal one-to-one link.
+
+### 3.4 Password Rules
 
 - Never store plaintext passwords.
 - Never reveal an existing user password.
@@ -150,6 +156,8 @@ Recommended fields:
 
 Rules:
 - Employee email should be unique.
+- Every normal Employee has exactly one linked `EMPLOYEE` User account.
+- Normal Employee creation must not accept an arbitrary User link.
 - Employee cannot be assigned as their own manager.
 - Inactive employees remain available for history.
 - Inactive employees should normally be excluded from future Payruns.

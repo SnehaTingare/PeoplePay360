@@ -75,6 +75,7 @@ Time Off
 Can:
 
 * Create/update employee records
+* Provision the required `EMPLOYEE` login account as part of Employee creation
 * Manage contracts
 * Manage working schedules
 * Review/correct attendance
@@ -671,7 +672,7 @@ manage system roles
 grant themselves Admin privileges
 ```
 
-Only Admin manages users and roles.
+Only Admin manages standalone internal users and roles. Authorized Employee creators may trigger controlled `EMPLOYEE` account provisioning only as part of `POST /employees`; this does not grant access to User Administration.
 
 ---
 

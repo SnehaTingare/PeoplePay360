@@ -137,6 +137,23 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
 .feature-card p { margin: 0; color: var(--muted); font-size: .88rem; }
 .feature-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 9px; background: #eef2ff; color: #3157d5; }
 .empty-workspace { padding: 2rem; max-width: 650px; }
+.employee-form { padding: clamp(1rem, 3vw, 1.6rem); max-width: 1000px; }
+.employee-form fieldset { margin: 0; padding: 0 0 1.5rem; border: 0; }
+.employee-form fieldset + fieldset { padding-top: 1.5rem; border-top: 1px solid var(--border); }
+.employee-form legend { width: 100%; margin-bottom: 1rem; color: #101828; font-size: 1rem; font-weight: 700; }
+.checkbox-row { display: inline-flex; align-items: center; gap: .55rem; color: #344054; font-size: .86rem; font-weight: 650; cursor: pointer; }
+.checkbox-row input { width: 17px; height: 17px; accent-color: var(--primary); }
+.bank-fields { margin-top: 1rem; }
+.employee-filters { padding: 1rem; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(145px, 1fr)); gap: .7rem; }
+.employee-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.detail-section { padding: 1.25rem; }
+.detail-section h2 { margin-bottom: 1rem; font-size: 1rem; }
+.detail-section dl { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
+.detail-item { min-width: 0; }
+.detail-item dt { margin-bottom: .2rem; color: var(--muted); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.detail-item dd { margin: 0; color: #1d2939; overflow-wrap: anywhere; }
+.detail-note { margin: 1rem 0 0; color: var(--muted); font-size: .78rem; }
+.header-actions { display: flex; gap: .65rem; }
 .schedule-form { padding: clamp(1rem, 3vw, 1.6rem); }
 .schedule-form-top { display: grid; grid-template-columns: minmax(240px, 500px) auto; justify-content: space-between; align-items: end; gap: 1.5rem; padding-bottom: 1.5rem; }
 .hours-preview { min-width: 170px; padding: .75rem 1rem; border: 1px solid #ccd6f4; border-radius: 9px; background: #f4f6ff; display: grid; gap: .1rem; }
@@ -169,7 +186,7 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
   .sidebar-scrim { display: block; position: fixed; inset: 0; z-index: 10; border: 0; background: rgba(16,24,40,.45); }
   .app-main { margin-left: 0; }
   .menu-button { display: block; border: 0; background: none; color: #344054; font-size: 1.3rem; cursor: pointer; }
-  .form-grid, .filters, .schedule-form-top { grid-template-columns: 1fr; }
+  .form-grid, .filters, .schedule-form-top, .employee-filters { grid-template-columns: 1fr; }
   .weekly-editor-header { display: none; }
   .schedule-line { grid-template-columns: 1fr 1fr; padding: 1rem; }
   .schedule-line > strong { grid-column: 1; }
@@ -184,6 +201,9 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
   .user-summary div { display: none; }
   .modal-actions, .form-actions { flex-direction: column-reverse; }
   .modal-actions .button, .form-actions .button { width: 100%; }
+  .employee-details-grid, .detail-section dl { grid-template-columns: 1fr; }
+  .header-actions { width: 100%; }
+  .header-actions .button { flex: 1; }
 }
 
 /* Premium application surface */

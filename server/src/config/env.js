@@ -2,7 +2,7 @@
 
 require('dotenv').config({ quiet: true });
 
-const parsedPort = Number(process.env.PORT || 5000);
+const parsedPort = Number(process.env.PORT || 6000);
 
 const env = Object.freeze({
   nodeEnv: process.env.NODE_ENV || 'development',

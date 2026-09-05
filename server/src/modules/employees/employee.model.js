@@ -38,7 +38,7 @@ const schema = new mongoose.Schema({
 
 schema.index({ employeeId: 1 }, { unique: true });
 schema.index({ email: 1 }, { unique: true });
-schema.index({ user: 1 }, { unique: true, partialFilterExpression: { user: { $type: 'objectId' } } });
+schema.index({ user: 1 }, { unique: true, sparse: true });
 schema.index({ department: 1, employmentStatus: 1 });
 schema.index({ manager: 1 });
 

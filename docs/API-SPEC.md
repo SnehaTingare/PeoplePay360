@@ -431,14 +431,13 @@ limit
   "firstName": "Rahul",
   "lastName": "Sharma",
   "email": "rahul@company.com",
-  "role": "EMPLOYEE",
-  "employeeId": "optional-linked-employee-id"
+  "role": "HR_MANAGER"
 }
 ```
 
 ### Behavior
 
-1. Validate role.
+1. Validate role. Standalone creation accepts only `ADMIN`, `HR_MANAGER`, `HR_PAYROLL_USER`, and `HR_PAYROLL_MANAGER`.
 2. Ensure email is unique.
 3. Generate a temporary password.
 4. Store only its hash.
@@ -451,11 +450,14 @@ mustChangePassword = true
 
 6. Return/show the temporary credential only once or deliver it using the configured email mechanism.
 
+Normal `EMPLOYEE` accounts must be provisioned through `POST /employees`; `POST /users` never creates an Employee or a half-linked account.
+
 ### Errors
 
 ```text
 USR-001 → duplicate email
 USR-002 → invalid role
+USR-006 → normal EMPLOYEE accounts require Employee onboarding
 ```
 
 ---
@@ -476,7 +478,6 @@ Allowed fields:
 firstName
 lastName
 email
-employeeId
 ```
 
 Not allowed through this endpoint:
@@ -486,6 +487,7 @@ password
 passwordHash
 role
 accountStatus
+employeeId
 ```
 
 Role and account state use dedicated endpoints.
@@ -720,7 +722,7 @@ Historical references remain valid.
 
 **Access:** `EMPLOYEE` with linked Employee record.
 
-Returns the authenticated user's Employee record only.
+Returns the authenticated user's Employee record only. The backend resolves the Employee from the authenticated User ID through the persisted `Employee.user` relationship; it does not require or trust an `employeeId` JWT claim.
 
 ---
 
@@ -793,9 +795,38 @@ ADMIN
 employmentStatus = ACTIVE
 ```
 
+The normal request does not accept `userId`. Employee onboarding internally provisions a User with role `EMPLOYEE`, account status `ACTIVE`, and `mustChangePassword = true`, then links both records.
+
+### Success
+
+```json
+{
+  "data": {
+    "employee": {
+      "id": "...",
+      "employeeId": "PP360-E-...",
+      "user": "...",
+      "firstName": "Rahul",
+      "lastName": "Sharma",
+      "email": "rahul@company.com",
+      "employmentStatus": "ACTIVE"
+    },
+    "accountProvisioning": {
+      "userId": "...",
+      "email": "rahul@company.com",
+      "temporaryPassword": "...",
+      "mustChangePassword": true
+    }
+  }
+}
+```
+
+`temporaryPassword` is returned only by the initial successful Employee-creation response. It is never persisted, logged, serialized on later reads, or retrievable again.
+
 ### Validation
 
 - email unique
+- User email available for Employee account provisioning
 - department required
 - job position required
 - employee cannot be own manager
@@ -807,6 +838,7 @@ employmentStatus = ACTIVE
 EMP-001
 EMP-002
 EMP-003
+USR-001
 ```
 
 ---
@@ -850,6 +882,8 @@ Result:
 employmentStatus = ACTIVE
 ```
 
+The linked `EMPLOYEE` User account is also set to `ACTIVE`.
+
 ---
 
 ## 10.7 Deactivate Employee
@@ -861,6 +895,8 @@ Result:
 ```text
 employmentStatus = INACTIVE
 ```
+
+The linked `EMPLOYEE` User account is also set to `INACTIVE`. Employee actions never change an Admin/HR/Payroll account.
 
 Historical Contracts and Payslips remain stored.
 
@@ -1002,6 +1038,8 @@ Cancellation must not rewrite historical Payslip snapshots.
 ---
 
 ## 11.7 Expiration
+
+### `POST /contracts/:id/expire`
 
 ```text
 RUNNING → EXPIRED
@@ -2925,6 +2963,7 @@ These are the only normal API actions for changing major workflow states.
 ```text
 POST /contracts/:id/start
 POST /contracts/:id/cancel
+POST /contracts/:id/expire
 ```
 
 ## Leave Allocation

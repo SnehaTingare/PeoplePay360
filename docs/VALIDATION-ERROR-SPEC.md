@@ -48,6 +48,7 @@ Authentication is missing or invalid.
 | USR-003 | Weak/invalid password | Validation | Reject based on chosen password policy. |
 | USR-004 | Attempt to retrieve plaintext password | Forbidden by design | Existing password is never returned. |
 | USR-005 | Duplicate Admin bootstrap | Validation/system guard | Do not create another bootstrap Admin automatically once one exists. |
+| USR-006 | `EMPLOYEE_ACCOUNT_REQUIRES_EMPLOYEE_ONBOARDING` | 422 / Business validation | Normal EMPLOYEE User accounts must be provisioned through `POST /employees`. |
 
 ---
 

@@ -10,6 +10,7 @@ const createAttendanceRouter = require('../modules/attendance/attendance.routes'
 const createDepartmentRouter = require('../modules/departments/department.routes');
 const createScheduleRouter = require('../modules/schedules/schedule.routes');
 const createEmployeeRouter = require('../modules/employees/employee.routes');
+const createContractRouter = require('../modules/contracts/contract.routes');
 
 const router = Router();
 const salaryConfigRouter = createSalaryConfigRouter({ authenticate });
@@ -18,6 +19,7 @@ const attendanceRouter = createAttendanceRouter({ authenticate });
 const departmentRouter = createDepartmentRouter({ authenticate });
 const scheduleRouter = createScheduleRouter({ authenticate });
 const employeeRouter = createEmployeeRouter({ authenticate });
+const contractRouter = createContractRouter({ authenticate });
 
 const useForPrefix = (prefix, childRouter) => (req, res, next) => {
   if (!req.path.startsWith(prefix)) return next();
@@ -30,6 +32,7 @@ router.use('/users', userRouter);
 router.use('/departments', departmentRouter);
 router.use('/working-schedules', scheduleRouter);
 router.use('/employees', employeeRouter);
+router.use('/contracts', contractRouter);
 router.use(useForPrefix('/payroll/', salaryConfigRouter));
 router.use(useForPrefix('/time-off/', timeOffRouter));
 router.use(useForPrefix('/attendance', attendanceRouter));

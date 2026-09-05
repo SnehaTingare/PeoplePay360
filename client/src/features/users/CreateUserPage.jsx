@@ -16,5 +16,5 @@ export default function CreateUserPage() {
     catch (requestError) { setError(getApiError(requestError).message) }
     finally { setBusy(false) }
   }
-  return <><header className="page-header"><div><p className="eyebrow">User administration</p><h1>Create user</h1><p>Create secure access and assign the initial role.</p></div></header><UserForm onSubmit={submit} onCancel={() => navigate('/users')} busy={busy} error={error} submitLabel="Create user" /><TemporaryPasswordDialog result={result} onDone={() => navigate('/users', { state: { notice: 'User created successfully.' } })} /></>
+  return <><header className="page-header"><div><p className="eyebrow">User administration</p><h1>Create internal user</h1><p>Create secure access for Admin, HR, or Payroll roles. Employee accounts are provisioned from Employees.</p></div></header><UserForm onSubmit={submit} onCancel={() => navigate('/users')} busy={busy} error={error} submitLabel="Create user" /><TemporaryPasswordDialog result={result} onDone={() => navigate('/users', { state: { notice: 'User created successfully.' } })} /></>
 }

@@ -29,13 +29,6 @@ function email(value) {
   }
   return value.trim().toLowerCase();
 }
-function employeeId(value) {
-  if (value === undefined || value === null) return value;
-  if (typeof value !== 'string' || !mongoose.isObjectIdOrHexString(value)) {
-    fail(errors.VALIDATION_ERROR, 'employeeId', 'employeeId must be a valid identifier.');
-  }
-  return value;
-}
 function positiveInteger(value, fallback, field, max = Number.MAX_SAFE_INTEGER) {
   if (value === undefined) return fallback;
   if (!/^\d+$/.test(String(value)) || Number(value) < 1 || Number(value) > max) {
@@ -64,24 +57,24 @@ function validateListUsers({ query }) {
 
 function validateCreateUser({ body }) {
   object(body);
-  allowed(body, ['firstName', 'lastName', 'email', 'role', 'employeeId']);
+  allowed(body, ['firstName', 'lastName', 'email', 'role']);
   if (!canonicalRole(body.role)) fail(errors.USER_INVALID_ROLE, 'role');
+  if (body.role === roles.EMPLOYEE) fail(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING, 'role');
   return { body: {
     firstName: name(body.firstName, 'firstName'), lastName: name(body.lastName, 'lastName'),
-    email: email(body.email), role: body.role, employeeId: employeeId(body.employeeId),
+    email: email(body.email), role: body.role,
   } };
 }
 
 function validateUpdateUser({ body, params }) {
   validateUserId({ params });
   object(body);
-  allowed(body, ['firstName', 'lastName', 'email', 'employeeId']);
+  allowed(body, ['firstName', 'lastName', 'email']);
   if (!Object.keys(body).length) fail(errors.VALIDATION_ERROR, 'body');
   const result = {};
   if (body.firstName !== undefined) result.firstName = name(body.firstName, 'firstName');
   if (body.lastName !== undefined) result.lastName = name(body.lastName, 'lastName');
   if (body.email !== undefined) result.email = email(body.email);
-  if (body.employeeId !== undefined) result.employeeId = employeeId(body.employeeId);
   return { params: { id: params.id }, body: result };
 }
 
@@ -90,6 +83,7 @@ function validateChangeRole({ body, params }) {
   object(body);
   allowed(body, ['role']);
   if (!canonicalRole(body.role)) fail(errors.USER_INVALID_ROLE, 'role');
+  if (body.role === roles.EMPLOYEE) fail(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING, 'role');
   return { params: { id: params.id }, body: { role: body.role } };
 }
 

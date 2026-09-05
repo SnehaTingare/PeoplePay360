@@ -2,6 +2,27 @@
 
 PeoplePay360 is currently in the **backend implementation phase**. Unless a task explicitly asks for frontend work, do not modify `client/`.
 
+### Employee Account Provisioning
+
+For the MVP, Employee onboarding is the canonical creation flow for EMPLOYEE users.
+
+Creating an Employee automatically provisions exactly one User account with:
+- role = EMPLOYEE
+- email = Employee email
+- generated temporary password
+- mustChangePassword = true
+- accountStatus = ACTIVE
+
+Only the password hash is stored. The plaintext temporary password may be returned to the authorized Employee creator exactly once and must never be stored or logged.
+
+Employee.user and User.employeeId must form a consistent one-to-one relationship.
+
+Normal Employee creation must not accept arbitrary User linkage.
+
+Standalone User creation is for internal/admin roles, not normal EMPLOYEE account provisioning.
+
+Employee self-service identity must be resolved from the authenticated User to its linked Employee.
+
 ## 1. Project Architecture
 
 PeoplePay360 is a modular-monolith MERN application:
