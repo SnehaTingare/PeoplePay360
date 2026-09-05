@@ -96,22 +96,24 @@ function createPayrunService({
     throw new AppError('RESOURCE_CONFLICT', 'Payrun cannot be computed from its current status.', 409);
   }
   async function computeEmployee(payrun, employeeId, structure, rules) {
+    const normalizedEmployeeId = String(employeeId);
+    const normalizedSalaryStructureId = String(payrun.salaryStructure);
     try {
-      const employee = await employees.getEmployee(employeeId);
+      const employee = await employees.getEmployee(normalizedEmployeeId);
       if (employee.employmentStatus !== 'ACTIVE') throw new AppError('PAY-015', 'Employee is inactive.', 422, 'BLOCKING');
-      const contract = await contracts.resolveApplicableContract({ employeeId, periodStart: payrun.periodStart, periodEnd: payrun.periodEnd, salaryStructureId: payrun.salaryStructure });
+      const contract = await contracts.resolveApplicableContract({ employeeId: normalizedEmployeeId, periodStart: payrun.periodStart, periodEnd: payrun.periodEnd, salaryStructureId: normalizedSalaryStructureId });
       if (!contract.salaryStructure) throw new AppError('CTR-006', 'Applicable contract has no Salary Structure.', 422, 'BLOCKING');
-      const duplicate = await payslips.findDuplicateOutsidePayrun({ employeeId, salaryStructureId: payrun.salaryStructure, periodStart: payrun.periodStart, periodEnd: payrun.periodEnd, payrunId: payrun._id });
+      const duplicate = await payslips.findDuplicateOutsidePayrun({ employeeId: normalizedEmployeeId, salaryStructureId: normalizedSalaryStructureId, periodStart: payrun.periodStart, periodEnd: payrun.periodEnd, payrunId: String(payrun._id) });
       if (duplicate) throw new AppError('PAY-006', 'A Payslip already exists for this employee and payroll scope.', 422, 'BLOCKING');
-      const schedule = await schedules.getSchedule(contract.workingSchedule);
-      const [attendanceRecords, leaveRequests] = await Promise.all([attendance.findForPayroll(employeeId, payrun.periodStart, payrun.periodEnd), timeOff.findApprovedForPayroll(employeeId, payrun.periodStart, payrun.periodEnd)]);
+      const schedule = await schedules.getSchedule(String(contract.workingSchedule));
+      const [attendanceRecords, leaveRequests] = await Promise.all([attendance.findForPayroll(normalizedEmployeeId, payrun.periodStart, payrun.periodEnd), timeOff.findApprovedForPayroll(normalizedEmployeeId, payrun.periodStart, payrun.periodEnd)]);
       const expected = calculate.calculateExpectedTime(payrun.periodStart, payrun.periodEnd, schedule);
       const leave = calculate.calculateUnpaidLeave(leaveRequests, expected);
       const attendanceSummary = calculate.summarizeAttendance(attendanceRecords);
       const payrollContext = calculate.buildPayrollContext({ contract, expected, leave, attendance: attendanceSummary });
       const computed = calculate.executeSalaryRules(rules, payrollContext, salaryConfig.calculateRules);
       const warnings = calculate.buildWarnings(employee, attendanceSummary, expected);
-      return { success: true, employeeId, snapshot: {
+      return { success: true, employeeId: normalizedEmployeeId, snapshot: {
         payrun: payrun._id, employee: employee._id, contract: contract._id, salaryStructure: payrun.salaryStructure,
         periodStart: payrun.periodStart, periodEnd: payrun.periodEnd, status: 'COMPUTED', workedDays: payrollContext.WORKED_DAYS,
         payrollContext: { expectedWorkingDays: payrollContext.EXPECTED_WORKING_DAYS, expectedWorkingMinutes: payrollContext.EXPECTED_WORKING_MINUTES, workedDays: payrollContext.WORKED_DAYS, unpaidLeaveDays: payrollContext.UNPAID_LEAVE_DAYS, unpaidLeaveHours: payrollContext.UNPAID_LEAVE_HOURS, attendanceWorkedHours: payrollContext.ATTENDANCE_WORKED_HOURS, presentCount: payrollContext.presentCount, lateCount: payrollContext.lateCount, overtimeCount: payrollContext.overtimeCount, absentCount: payrollContext.absentCount, missingCheckoutCount: payrollContext.missingCheckoutCount, manualCorrectionCount: payrollContext.manualCorrectionCount, dailyRate: payrollContext.DAILY_RATE },
@@ -129,8 +131,9 @@ function createPayrunService({
   async function computePayrun(id) {
     const payrun = await getPayrun(id);
     assertComputeAllowed(payrun);
-    const structure = await salaryConfig.getStructure(payrun.salaryStructure);
-    const rules = await salaryConfig.getOrderedActiveRules(payrun.salaryStructure);
+    const salaryStructureId = String(payrun.salaryStructure);
+    const structure = await salaryConfig.getStructure(salaryStructureId);
+    const rules = await salaryConfig.getOrderedActiveRules(salaryStructureId);
     const results = [];
     for (const employeeId of payrun.employees) results.push(await computeEmployee(payrun, employeeId, structure, rules));
     const issues = [];
