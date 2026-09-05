@@ -16,6 +16,7 @@ import attendanceApi from '../api/attendanceApi'
 
 const statuses = ['OPEN', 'PRESENT', 'LATE', 'OVERTIME', 'ABSENT', 'MISSING_CHECKOUT']
 const blankManual = { employeeId: '', checkIn: '', checkOut: '', notes: '' }
+const toIsoTimestamp = (value) => (value ? new Date(value).toISOString() : undefined)
 
 export default function AttendancePage() {
   const { user } = useAuth()
@@ -58,7 +59,15 @@ export default function AttendancePage() {
     if (notesError) {
       setError(notesError); setBusy(''); return
     }
-    try { await attendanceApi.create({ ...manual, checkOut: manual.checkOut || undefined, notes: manual.notes.trim() }); setManual(null); await load() }
+    try {
+      await attendanceApi.create({
+        employeeId: manual.employeeId,
+        checkIn: toIsoTimestamp(manual.checkIn),
+        ...(manual.checkOut ? { checkOut: toIsoTimestamp(manual.checkOut) } : {}),
+        notes: manual.notes.trim(),
+      })
+      setManual(null); await load()
+    }
     catch (requestError) { setError(getApiError(requestError).message) }
     finally { setBusy('') }
   }
