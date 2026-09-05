@@ -98,10 +98,10 @@ Authentication is missing or invalid.
 | ATT-001 | Check Out without Check In | Validation | Reject. |
 | ATT-002 | Check Out <= Check In | Validation | Reject. |
 | ATT-003 | Employee attempts second Check In while an open attendance session exists | Validation | Reject duplicate/open check-in. |
-| ATT-004 | Missing Check Out | Warning/exception | Mark as Missing Checkout for HR review. |
+| ATT-004 | Missing Check Out | Warning/exception | Mark as `MISSING_CHECKOUT` for HR review. |
 | ATT-005 | Unauthorized user edits attendance | 403 Forbidden | Reject. |
 | ATT-006 | Manual correction performed | Audit requirement | Store editor and manual-edit flag. |
-| ATT-007 | Attendance duration impossible/unreasonably large | Warning/validation | Flag for HR review according to team policy. |
+| ATT-007 | Attendance duration impossible/unreasonably large | Warning/validation | Flag for HR review. Worked Hours remain `CheckOut - CheckIn`; scheduled break is not automatically subtracted. |
 
 ---
 
@@ -112,9 +112,9 @@ Authentication is missing or invalid.
 | LEV-001 | Start Date > End Date | Validation | Reject. |
 | LEV-002 | Allocation-required leave has no approved allocation | Validation/approval block | Cannot approve. |
 | LEV-003 | Requested duration > remaining allocation | Validation/approval block | Reject or block approval. |
-| LEV-004 | Leave overlaps another approved/requested leave | Validation/warning | Block or warn based on chosen policy. |
+| LEV-004 | Leave overlaps another `PENDING` or `APPROVED` leave request for the same employee | Validation | Block the new overlapping request. |
 | LEV-005 | Allocation validity expired | Validation | Do not use expired balance. |
-| LEV-006 | Rejected leave request | No balance change | Must not consume allocation. |
+| LEV-006 | Refused leave request | No balance change | Must not consume allocation. |
 | LEV-007 | Approved leave request | Business action | Consume allocation if type requires allocation. |
 | LEV-008 | Unauthorized user approves/refuses leave | 403 Forbidden | Reject. |
 | LEV-009 | Negative allocation amount | Validation | Reject. |
@@ -139,11 +139,11 @@ Authentication is missing or invalid.
 |---|---|---|---|
 | SAL-001 | Duplicate rule code within same structure | Validation | Reject. |
 | SAL-002 | Rule sequence missing/invalid | Validation | Reject. |
-| SAL-003 | Percentage rule references missing component | Blocking | Calculation cannot continue. |
+| SAL-003 | `PERCENTAGE` or `FORMULA` rule references a missing component | Blocking | Calculation cannot continue. References may use `CONTRACT_WAGE`, `BASIC`, `GROSS`, or another previously computed component. |
 | SAL-004 | Rule depends on a later sequence | Validation/blocking | Reject configuration or fail computation clearly. |
 | SAL-005 | Circular dependency | Validation | Do not allow. |
-| SAL-006 | Unsupported calculation type | Validation | Reject. |
-| SAL-007 | Arbitrary executable formula/code supplied | Security rule | Do not execute. |
+| SAL-006 | Calculation type is not `FIXED`, `PERCENTAGE`, or `FORMULA` | Validation | Reject. `CONTRACT_WAGE` is an input/base value, not a calculation type. |
+| SAL-007 | Arbitrary executable formula/code supplied | Security rule | Do not execute. `FORMULA` must use safe predefined/validated handling. |
 | SAL-008 | Rule calculation returns invalid numeric result | Blocking | Stop employee payroll computation. |
 | SAL-009 | Negative amount where not allowed | Validation | Reject according to rule category/policy. |
 
@@ -236,9 +236,9 @@ Authentication is missing or invalid.
 | Current State | Action | Next State |
 |---|---|---|
 | PENDING | Approve | APPROVED |
-| PENDING | Reject | REJECTED |
+| PENDING | Refuse | REFUSED |
 | APPROVED | Approve again | No-op/reject |
-| REJECTED | Reject again | No-op/reject |
+| REFUSED | Refuse again | No-op/reject |
 
 ---
 

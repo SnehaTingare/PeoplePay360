@@ -265,17 +265,20 @@ For payroll computation, exactly one applicable contract should exist.
 - Contract should reference a Salary Structure.
 - Concurrent/overlapping applicable contracts are a blocking payroll condition.
 
-### 6.4 Derived Contract States
+### 6.4 Contract Statuses
 
-Recommended:
+Canonical stored statuses:
 
 ```text
-UPCOMING
-ACTIVE
+DRAFT
+RUNNING
 EXPIRED
+CANCELLED
 ```
 
-These can be derived from dates.
+`UPCOMING` may be derived from contract dates for display/filtering if useful, but it is not a canonical stored status.
+
+Payroll must still resolve the Contract applicable to the selected Payrun period using the contract date range and historical contract records.
 
 ---
 
@@ -308,18 +311,26 @@ Worked Hours
 = Check Out - Check In
 ```
 
-If the team's policy subtracts scheduled breaks, it must be applied consistently.
+Scheduled Working Schedule breaks are **not automatically subtracted** from actual Attendance worked hours.
+
+Working Schedule expected hours remain:
+
+```text
+Expected Hours
+= End Time - Start Time - Break
+```
 
 ### 7.4 Attendance Statuses
 
-Recommended statuses:
+Canonical statuses:
 
 ```text
-Present
-Late
-Absent
-Overtime
-Missing Checkout
+OPEN
+PRESENT
+LATE
+OVERTIME
+ABSENT
+MISSING_CHECKOUT
 ```
 
 ### 7.5 Manual Corrections
@@ -403,14 +414,14 @@ Statuses:
 ```text
 PENDING
 APPROVED
-REJECTED
+REFUSED
 ```
 
 Rules:
 - Only approved requests consume allocation.
-- Rejected requests do not consume balance.
+- Refused requests do not consume balance.
 - For allocation-required leave, approval must fail if duration exceeds remaining balance.
-- Overlapping leave should be blocked or explicitly warned according to team policy.
+- A new leave request must be blocked if it overlaps an existing `PENDING` or `APPROVED` leave request for the same employee.
 - Unpaid Leave may be allowed without allocation.
 - Unpaid Leave can feed payroll deduction calculations.
 
@@ -469,14 +480,23 @@ Net
 
 ### 10.2 Calculation Types
 
-MVP-supported types:
+Supported calculation types:
 
-1. Contract Wage
-2. Fixed Amount
-3. Percentage of prior component
-4. Safe predefined formula
+```text
+FIXED
+PERCENTAGE
+FORMULA
+```
 
-Do not execute arbitrary user-provided code.
+`CONTRACT_WAGE` is an input/base value available to rule evaluation; it is **not** a calculation type.
+
+`PERCENTAGE` and `FORMULA` rules may reference:
+- `CONTRACT_WAGE`
+- `BASIC`
+- `GROSS`
+- another previously computed component
+
+`FORMULA` handling must use safe predefined/validated expressions. Do not execute arbitrary user-provided code.
 
 ### 10.3 Sequence Rule
 
@@ -632,13 +652,13 @@ Approved Unpaid Leave = 2 days
 Rules:
 
 ```text
-BASIC = Contract Wage
-HRA = 20% of BASIC
-TRAVEL = Fixed 2,000
-GROSS = BASIC + Allowances
-PF = 12% of BASIC
-UNPAID_LEAVE = Daily Rate × Unpaid Leave Days
-NET = GROSS - Deductions
+BASIC = FORMULA referencing CONTRACT_WAGE
+HRA = PERCENTAGE of BASIC
+TRAVEL = FIXED 2,000
+GROSS = FORMULA using BASIC + Allowances
+PF = PERCENTAGE of BASIC
+UNPAID_LEAVE = FORMULA using Daily Rate × Unpaid Leave Days
+NET = FORMULA using GROSS - Deductions
 ```
 
 Calculation:
@@ -891,12 +911,12 @@ Supported filters:
 - Salary Rules
 - Payruns
 - Payslips
+- Payslip PDF generation
+- Bulk Payslip email delivery
+- Live Payroll Dashboard
 - Core validations
 
 ### Should Build
-- PDF
-- Email
-- Live Dashboard
 - Attendance exceptions
 
 ### Can Simplify

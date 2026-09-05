@@ -220,6 +220,23 @@ Wage = 50,000
 
 ---
 
+### TC-CTR-001A — Canonical contract statuses
+
+**Expected**
+- Stored Contract status must use only:
+
+```text
+DRAFT
+RUNNING
+EXPIRED
+CANCELLED
+```
+
+- `UPCOMING` may be derived from dates for display/filtering but is not stored as a canonical Contract status.
+- Payroll still resolves the Contract applicable to the Payrun period from the historical contract/date context.
+
+---
+
 ### TC-CTR-002 — No applicable contract
 
 **Setup**
@@ -287,7 +304,8 @@ Contract B: Jun-Dec
 
 **Expected**
 - Attendance saved.
-- Worked Hours calculated correctly according to chosen break policy.
+- Worked Hours = `18:00 - 09:00 = 9 hours`.
+- Scheduled Working Schedule break is not automatically subtracted from actual Attendance worked hours.
 
 ---
 
@@ -332,7 +350,7 @@ Contract B: Jun-Dec
 - No Check Out.
 
 **Expected**
-- Attendance status/exception shows Missing Checkout.
+- Attendance status/exception = `MISSING_CHECKOUT`.
 - Payroll/HR warning can surface according to policy.
 
 ---
@@ -395,18 +413,18 @@ Status = APPROVED
 
 ---
 
-### TC-LEV-003 — Reject leave request
+### TC-LEV-003 — Refuse leave request
 
 **Setup**
 - Remaining = 12.
 
 **Action**
 - Employee requests 2 days.
-- HR rejects.
+- HR refuses.
 
 **Expected**
 - Remaining stays 12.
-- Status = REJECTED.
+- Status = REFUSED.
 
 ---
 
@@ -426,14 +444,14 @@ Status = APPROVED
 ### TC-LEV-005 — Overlapping leave
 
 **Setup**
-- Approved leave: 10-12 Sep.
+- Existing leave request for the same employee is `PENDING` or `APPROVED`: 10-12 Sep.
 
 **Action**
-- Request: 11-13 Sep.
+- Create a new request: 11-13 Sep.
 
 **Expected**
-- Block or warn according to agreed team policy.
-- Must be consistent with `LEV-004`.
+- Block the new overlapping request.
+- Return/align with `LEV-004`.
 
 ---
 
@@ -502,6 +520,7 @@ Status = APPROVED
 
 ```text
 BASIC = 50,000
+HRA calculationType = PERCENTAGE
 HRA = 20% of BASIC
 ```
 
@@ -516,10 +535,37 @@ HRA = 10,000
 ### TC-SAL-004 — Fixed allowance
 
 **Input**
-- Travel = fixed 2,000.
+- `calculationType = FIXED`
+- Travel = 2,000.
 
 **Expected**
 - Travel result = 2,000.
+
+---
+
+### TC-SAL-004A — Formula may reference Contract Wage input
+
+**Input**
+
+```text
+CONTRACT_WAGE = 50,000
+BASIC calculationType = FORMULA
+BASIC formula references CONTRACT_WAGE
+```
+
+**Expected**
+- BASIC = 50,000.
+- `CONTRACT_WAGE` is treated as an input/base value, not a calculation type.
+
+---
+
+### TC-SAL-004B — Contract Wage is not a calculation type
+
+**Action**
+- Attempt to create a Salary Rule with `calculationType = CONTRACT_WAGE`.
+
+**Expected**
+- Reject with `SAL-006`.
 
 ---
 
@@ -657,11 +703,13 @@ B depends on A
 **Setup**
 
 ```text
-Contract Wage = 50,000
-BASIC = Contract Wage
-HRA = 20% BASIC
-TRAVEL = 2,000
-PF = 12% BASIC
+CONTRACT_WAGE input = 50,000
+BASIC = FORMULA referencing CONTRACT_WAGE
+HRA = PERCENTAGE, 20% of BASIC
+TRAVEL = FIXED, 2,000
+GROSS = FORMULA using BASIC + allowances
+PF = PERCENTAGE, 12% of BASIC
+NET = FORMULA using GROSS - deductions
 No unpaid leave
 ```
 
@@ -683,7 +731,7 @@ NET = 56,000
 **Setup**
 
 ```text
-Contract Wage = 50,000
+CONTRACT_WAGE input = 50,000
 Expected Working Days = 25
 Approved Unpaid Leave = 2
 ```
@@ -1095,7 +1143,7 @@ Before demo, manually verify:
 - [ ] Checkout without check-in
 - [ ] Missing checkout
 - [ ] Leave exceeds allocation
-- [ ] Rejected leave does not reduce balance
+- [ ] Refused leave does not reduce balance
 - [ ] Unpaid leave reaches payroll
 - [ ] Missing Salary Rule dependency
 - [ ] Missing bank details warning
