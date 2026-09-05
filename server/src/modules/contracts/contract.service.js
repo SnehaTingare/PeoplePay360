@@ -67,10 +67,10 @@ function createContractService({
 
   async function validateReferences(contract) {
     await Promise.all([
-      employees.getEmployee(contract.employee),
-      departments.getDepartment(contract.department),
-      schedules.getSchedule(contract.workingSchedule),
-      salaryConfig.getStructure(contract.salaryStructure),
+      employees.getEmployee(String(contract.employee)),
+      departments.getDepartment(String(contract.department)),
+      schedules.getSchedule(String(contract.workingSchedule)),
+      salaryConfig.getStructure(String(contract.salaryStructure)),
     ]);
   }
 
