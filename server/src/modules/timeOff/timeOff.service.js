@@ -6,9 +6,13 @@ const AppError = require('../../core/errors/AppError');
 const persistenceError = require('../../core/errors/persistenceError');
 const paginate = require('../../core/http/pagination');
 const { search } = require('../../core/http/validation');
+const { createLeaveService } = require('./leave.service');
 
 // hasTypeHistory(id) must check approved leave/history before policy changes.
-function createTimeOffService({ Type = TimeOffType, hasTypeHistory } = {}) {
+function createTimeOffService(options = {}) {
+  const { Type = TimeOffType } = options;
+  const leave = createLeaveService(options);
+  const hasTypeHistory = options.hasTypeHistory || leave.hasTypeHistory;
   async function getType(id, { activeOnly = false } = {}) {
     validation.id(id);
     const record = await Type.findOne({ _id: id, ...(activeOnly ? { active: true } : {}) });
@@ -66,7 +70,7 @@ function createTimeOffService({ Type = TimeOffType, hasTypeHistory } = {}) {
 
   // Future request creation must use this exported lookup, never an unrestricted ID lookup.
   const getActiveType = id => getType(id, { activeOnly: true });
-  return { listTypes, createType, getType, updateType, deactivateType, getActiveType };
+  return { listTypes, createType, getType, updateType, deactivateType, getActiveType, ...leave };
 }
 
 module.exports = { createTimeOffService, ...createTimeOffService() };
