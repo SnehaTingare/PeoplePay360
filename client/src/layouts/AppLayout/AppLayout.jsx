@@ -220,24 +220,13 @@ export default function AppLayout() {
 
           <div className="sidebar-footer">
             <button
-              className="sidebar-profile"
-              onClick={() => navigate('/change-password')}
-              title="Account security"
-            >
-              <span className="avatar">
-                {initials}
-              </span>
-
-              <span>
-                <strong>
-                  {user.firstName} {user.lastName}
-                </strong>
-
-                <small>
-                  {roleLabel(user.role)}
-                </small>
-              </span>
-            </button>
+  className="change-password-button"
+  onClick={() => navigate('/change-password')}
+  title="Change Password"
+>
+  <Icon name="key" size={18} />
+  <span>Change Password</span>
+</button>
 
             <button
               className="signout-button"

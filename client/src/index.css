@@ -445,19 +445,114 @@ input:focus, select:focus, textarea:focus { border-color: var(--violet); box-sha
 .sidebar-profile > span:last-child, .topbar-user > span:last-child { min-width: 0; display: grid; gap: .1rem; }
 .sidebar-profile strong, .topbar-user strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .78rem; }
 .sidebar-profile small { color: #aaa5cf; font-size: .68rem; }
+.change-password-button {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+
+  width: 100%;
+  padding: .65rem .6rem;
+
+  border: 0;
+  border-radius: 9px;
+
+  background: transparent;
+  color: #c9c5e4;
+
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+
+  text-align: left;
+
+  transition: background .15s ease, color .15s ease;
+}
+
+.change-password-button .icon {
+  fill: currentColor;
+}
+
+.change-password-button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .08);
+}
 .signout-button { display: flex; align-items: center; gap: .65rem; width: 100%; padding: .65rem .6rem; border: 0; color: #c9c5e4; background: transparent; border-radius: 9px; cursor: pointer; font-weight: 650; text-align: left; transition: background .15s ease, color .15s ease; }
 .signout-button:hover { color: #fff; background: rgba(255,255,255,.08); }
 .app-main { margin-left: 270px; transition: margin-left .22s ease; }
-.app-shell--collapsed .sidebar { width: 78px; }
-.app-shell--collapsed .app-main { margin-left: 78px; }
-.app-shell--collapsed .brand-copy, .app-shell--collapsed .sidebar-label { display: none; }
-/* Hide dropdown text when sidebar is collapsed */
-.app-shell--collapsed .sidebar nav .nav-group-button span:not(.nav-arrow) {
+/* ================================
+   COLLAPSED SIDEBAR
+================================ */
+
+.app-shell--collapsed .sidebar {
+  width: 78px;
+}
+
+.app-shell--collapsed .app-main {
+  margin-left: 78px;
+}
+
+/* Hide PeoplePay360 text */
+.app-shell--collapsed .brand-copy {
   display: none;
 }
 
+/* Hide sidebar labels */
+.app-shell--collapsed .sidebar-label {
+  display: none;
+}
+
+
+/* ----------------
+   BRAND / HAMBURGER
+---------------- */
+
+.app-shell--collapsed .brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* IMPORTANT: keep hamburger visible */
+.app-shell--collapsed .sidebar-collapse {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: auto !important;
+  flex-shrink: 0;
+}
+.app-shell--collapsed .brand-mark {
+  display: none;
+}
+
+
+/* ----------------
+   NORMAL NAV ITEMS
+---------------- */
+
+.app-shell--collapsed .sidebar nav a {
+  justify-content: center;
+}
+
+.app-shell--collapsed .sidebar nav a span {
+  display: none;
+}
+
+
+/* ----------------
+   NAV DROPDOWN GROUPS
+---------------- */
+
 .app-shell--collapsed .sidebar nav .nav-group-button {
   justify-content: center;
+}
+
+.app-shell--collapsed .sidebar nav .nav-group-button span:not(.nav-arrow) {
+  display: none;
 }
 
 .app-shell--collapsed .nav-arrow {
@@ -466,9 +561,34 @@ input:focus, select:focus, textarea:focus { border-color: var(--violet); box-sha
 
 .app-shell--collapsed .nav-submenu {
   display: none;
-} .app-shell--collapsed .sidebar nav a span, .app-shell--collapsed .sidebar-profile > span:last-child, .app-shell--collapsed .signout-button span, .app-shell--collapsed .sidebar-collapse { display: none; }
-.app-shell--collapsed .sidebar .brand { justify-content: center; padding-inline: 0; }
-.app-shell--collapsed .sidebar nav a, .app-shell--collapsed .sidebar-profile, .app-shell--collapsed .signout-button { justify-content: center; }
+}
+
+
+/* ----------------
+   CHANGE PASSWORD
+---------------- */
+
+.app-shell--collapsed .change-password-button {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.app-shell--collapsed .change-password-button span {
+  display: none;
+}
+
+
+/* ----------------
+   SIGN OUT
+---------------- */
+
+.app-shell--collapsed .signout-button {
+  justify-content: center;
+}
+
+.app-shell--collapsed .signout-button span {
+  display: none;
+}
 .topbar { height: 76px; padding: 0 clamp(1.25rem, 4vw, 2.7rem); border: 0; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.86); backdrop-filter: blur(14px); }
 .topbar-title, .topbar-actions { display: flex; align-items: center; gap: 1rem; }
 .topbar-title p { margin: 0 0 .12rem; color: #8a879d; font-size: .68rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
