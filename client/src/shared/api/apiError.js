@@ -7,6 +7,13 @@ const messages = {
   'USR-001': 'A user with this email already exists.',
   'USR-002': 'Please select a valid role.',
   'USR-003': 'The password does not meet the required policy.',
+  'SCH-001': 'End time must be later than start time and times must use HH:mm.',
+  'SCH-002': 'Break duration cannot be negative.',
+  'SCH-003': 'Break duration must be shorter than the shift.',
+  'SCH-004': 'Each schedule day must be valid and configured only once.',
+  'SCH-005': 'Configure at least one working day.',
+  DUPLICATE_CODE: 'That department code is already in use.',
+  RESOURCE_CONFLICT: 'This record changed. Reload it and try again.',
   VALIDATION_ERROR: 'Please review the highlighted information.',
   RESOURCE_NOT_FOUND: 'The requested record could not be found.',
 }
