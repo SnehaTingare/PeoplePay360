@@ -445,6 +445,27 @@ input:focus, select:focus, textarea:focus { border-color: var(--violet); box-sha
 .sidebar-profile > span:last-child, .topbar-user > span:last-child { min-width: 0; display: grid; gap: .1rem; }
 .sidebar-profile strong, .topbar-user strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .78rem; }
 .sidebar-profile small { color: #aaa5cf; font-size: .68rem; }
+.change-password-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+
+  border: none;
+  border-radius: 8px;
+
+  background: transparent;
+  color: inherit;
+
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.change-password-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
 .signout-button { display: flex; align-items: center; gap: .65rem; width: 100%; padding: .65rem .6rem; border: 0; color: #c9c5e4; background: transparent; border-radius: 9px; cursor: pointer; font-weight: 650; text-align: left; transition: background .15s ease, color .15s ease; }
 .signout-button:hover { color: #fff; background: rgba(255,255,255,.08); }
 .app-main { margin-left: 270px; transition: margin-left .22s ease; }
