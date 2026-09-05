@@ -13,7 +13,7 @@ const schema = new mongoose.Schema({
   editedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   correctionReason: { type: String, default: '' },
 }, { timestamps: true, optimisticConcurrency: true, toJSON: { virtuals: true } });
-schema.index({ employee: 1, date: 1 });
+schema.index({ employee: 1, date: 1 }, { unique: true, name: 'one_attendance_per_employee_per_day' });
 schema.index({ employee: 1, status: 1 });
 schema.index({ employee: 1 }, { unique: true, partialFilterExpression: { status: 'OPEN' }, name: 'one_open_attendance_per_employee' });
 module.exports = mongoose.models.Attendance || mongoose.model('Attendance', schema);

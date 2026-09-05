@@ -27,17 +27,31 @@ function createAttendanceService({ Model = Attendance, employees, schedules, now
   const access = createEmployeeAccess(employees);
   const scheduleAccess = createScheduleAccess(schedules);
   async function derive(employeeId, checkIn, checkOut) {
-    const schedule = await scheduleAccess.attendance(employeeId, checkIn);
+    let schedule = null;
+    try {
+      schedule = await scheduleAccess.attendance(employeeId, checkIn);
+    } catch (error) {
+      if (error.code !== 'VALIDATION_ERROR' || error.message !== 'No working schedule applies on this date.') throw error;
+    }
     const workedMinutes = checkOut ? calculateWorkedMinutes(checkIn, checkOut) : 0;
-    return { date: schedule.date, workedMinutes, workedHours: workedMinutes / 60, status: determineStatus(checkIn, checkOut, schedule) };
+    return {
+      date: schedule?.date || dates.dateOnly(checkIn.toISOString().slice(0, 10)),
+      workedMinutes,
+      workedHours: workedMinutes / 60,
+      status: schedule ? determineStatus(checkIn, checkOut, schedule) : (checkOut ? 'PRESENT' : 'MISSING_CHECKOUT'),
+    };
   }
   async function checkIn(actor, body = {}) {
     validation.empty(body);
     const employee = access.active(await access.own(actor));
     const timestamp = now();
+    const attendanceDate = dates.dateOnly(timestamp.toISOString().slice(0, 10));
     const schedule = await scheduleAccess.attendance(employee.id, timestamp);
-    if (await Model.exists({ employee: employee.id, status: 'OPEN' })) throw new AppError('ATT-003', 'An open check-in already exists.', 409);
-    try { return await Model.create({ employee: employee.id, date: schedule.date, checkIn: timestamp, status: 'OPEN', workedMinutes: 0, workedHours: 0 }); }
+    if (timestamp < schedule.start || timestamp > schedule.end) {
+      throw new AppError('VALIDATION_ERROR', 'Check-in is allowed only during scheduled working hours.', 422);
+    }
+    if (await Model.exists({ employee: employee.id, date: attendanceDate })) throw new AppError('ATT-003', 'Attendance already exists for today.', 409);
+    try { return await Model.create({ employee: employee.id, date: attendanceDate, checkIn: timestamp, status: 'OPEN', workedMinutes: 0, workedHours: 0 }); }
     catch (error) { throw persistenceError(error, 'ATT-003'); }
   }
   async function checkOut(actor, body = {}) {

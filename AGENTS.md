@@ -1,77 +1,48 @@
 # AGENTS.md — PeoplePay360
 
-PeoplePay360 is currently in the **backend implementation phase**. Unless a task explicitly asks for frontend work, do not modify `client/`.
+PeoplePay360 is a **24-hour hackathon MERN project**. Optimize for safe, fast implementation.
 
-### Employee Account Provisioning
-
-For the MVP, Employee onboarding is the canonical creation flow for EMPLOYEE users.
-
-Creating an Employee automatically provisions exactly one User account with:
-- role = EMPLOYEE
-- email = Employee email
-- generated temporary password
-- mustChangePassword = true
-- accountStatus = ACTIVE
-
-Only the password hash is stored. The plaintext temporary password may be returned to the authorized Employee creator exactly once and must never be stored or logged.
-
-Employee.user and User.employeeId must form a consistent one-to-one relationship.
-
-Normal Employee creation must not accept arbitrary User linkage.
-
-Standalone User creation is for internal/admin roles, not normal EMPLOYEE account provisioning.
-
-Employee self-service identity must be resolved from the authenticated User to its linked Employee.
-
-## 1. Project Architecture
-
-PeoplePay360 is a modular-monolith MERN application:
+## 1. Stack / Architecture
 
 - Frontend: React + Vite
 - Backend: Node.js + Express
 - Database: MongoDB + Mongoose
-- REST API base: `/api/v1`
+- JavaScript only
+- Modular monolith
+- REST base: `/api/v1`
+- Business logic belongs in services, not controllers/frontend.
 
-Core flow:
-
-```text
-Auth / RBAC
-→ Employee
-→ Contract + Working Schedule
-→ Attendance + Time Off
-→ Salary Structure + Salary Rules
-→ Payrun
-→ Payslip
-→ PDF / Email / Live Dashboard
-```
-
-Business logic belongs in backend services, not controllers or frontend code.
-
-## 2. Current Documentation
-
-Use the current files under `docs/`:
+Backend flow:
 
 ```text
-01-USER-FLOWS.md
-02-ROLES-PERMISSIONS.md
-03-STATE-MACHINES.md
-AI-CODING-RULES.md
-API-SPEC.md
-BACKEND-STANDARDS.md
-BUSINESS-RULES.md
-MODULES.md
-PROJECT-STRUCTURE.md
-TEST-CASES.md
-VALIDATION-ERROR-SPEC.md
+Route → Middleware → Controller → Service → Model / exported module service
 ```
 
-`docs/DATABASE-SPEC.md` is not part of the current repository. Do not stop because it is missing and do not recreate it unless explicitly asked.
+Do not introduce microservices, Redis, Kubernetes, Python backend, TypeScript, or unrelated architecture changes.
 
-For persistence/model decisions, use `BUSINESS-RULES.md`, `API-SPEC.md`, `MODULES.md`, `PROJECT-STRUCTURE.md`, and the existing Mongoose models.
+---
 
-## 3. Canonical Resolutions
+## 2. Documentation Policy — IMPORTANT
 
-Some documents still contain older wording. The following decisions are already resolved and override those stale references.
+For normal Codex tasks:
+
+1. Read this `AGENTS.md`.
+2. Read the current user/task prompt.
+3. Inspect only the source files relevant to that task.
+4. **Do NOT automatically read every file in `/docs`.**
+5. Read a `/docs` file only when:
+   - the prompt explicitly asks for it, or
+   - a genuine unresolved business-rule ambiguity blocks implementation.
+
+The task prompt is expected to already contain the relevant requirements.
+
+Do not repeatedly re-audit documentation already summarized in this file.
+
+`docs/DATABASE-SPEC.md` is not required. Do not recreate it unless explicitly asked.
+
+---
+
+## 3. Canonical Values
 
 ### Roles
 
@@ -83,14 +54,14 @@ HR_PAYROLL_MANAGER
 ADMIN
 ```
 
-### User / Employee states
+### Employee / User
 
 ```text
 ACTIVE
 INACTIVE
 ```
 
-### Contract states
+### Contract
 
 ```text
 DRAFT
@@ -99,9 +70,9 @@ EXPIRED
 CANCELLED
 ```
 
-`UPCOMING` may be derived for display only. Do not replace `RUNNING` with `ACTIVE`.
+Never replace `RUNNING` with `ACTIVE`.
 
-### Attendance states
+### Attendance
 
 ```text
 OPEN
@@ -112,7 +83,7 @@ ABSENT
 MISSING_CHECKOUT
 ```
 
-### Leave Allocation states
+### Leave Allocation
 
 ```text
 DRAFT
@@ -120,7 +91,7 @@ APPROVED
 CANCELLED
 ```
 
-### Leave Request states
+### Leave Request
 
 ```text
 PENDING
@@ -130,16 +101,15 @@ REFUSED
 
 Never use `REJECTED`.
 
-### Payrun / Payslip states
+### Payrun / Payslip
 
 ```text
-DRAFT
-COMPUTED
-VALIDATED
-PAID
+DRAFT → COMPUTED → VALIDATED → PAID
 ```
 
-### Salary Rule calculation types
+### Salary Rule
+
+Calculation types:
 
 ```text
 FIXED
@@ -147,11 +117,7 @@ PERCENTAGE
 FORMULA
 ```
 
-Do not use `DERIVED_FORMULA`.
-
-`CONTRACT_WAGE` is an input/base value only, not a calculation type.
-
-### Salary Rule categories
+Categories:
 
 ```text
 BASIC
@@ -161,98 +127,64 @@ DEDUCTION
 NET
 ```
 
-Do not introduce `CONTRIBUTION` as a canonical category.
+`CONTRACT_WAGE` is an input/base, not a calculation type.
 
-If `DERIVED_FORMULA` or `CONTRIBUTION` appears in `PROJECT-STRUCTURE.md`, `MODULES.md`, or `BACKEND-STANDARDS.md`, treat it as stale wording. Do not stop on these known conflicts.
+Never use `DERIVED_FORMULA`, `CONTRIBUTION`, `eval`, `Function(...)`, or executable user code.
 
-## 4. Read Only Relevant Docs
+---
 
-Do not read every `.md` file for every task.
+## 4. Core Business Rules
 
-### Foundation / Auth / Users / RBAC
+### Contracts
+- Preserve historical Contracts.
+- Payroll uses date-based applicability.
+- Exactly one applicable Contract is required.
+- Zero or multiple applicable Contracts are blocking.
+- Never silently choose one when multiple match.
 
-Read:
-
-```text
-02-ROLES-PERMISSIONS.md
-API-SPEC.md
-BACKEND-STANDARDS.md
-VALIDATION-ERROR-SPEC.md
-AI-CODING-RULES.md
-```
-
-### Departments / Working Schedules / Employees
-
-Read:
+Applicable when:
 
 ```text
-01-USER-FLOWS.md
-BUSINESS-RULES.md
-API-SPEC.md
-MODULES.md
-BACKEND-STANDARDS.md
+startDate <= payrun.periodEnd
+AND
+(endDate is null OR endDate >= payrun.periodStart)
 ```
 
-### Contracts / Attendance / Time Off
+### Working Schedule
+- Expected hours = end time - start time - scheduled break.
+- Weekly hours are backend-derived.
 
-Read the relevant sections from:
+### Attendance
+- Actual worked time = checkout - checkin.
+- Do not subtract scheduled break from actual punch duration.
+- Prevent second open check-in.
+- Missing checkout is a non-blocking payroll warning by default.
 
-```text
-01-USER-FLOWS.md
-03-STATE-MACHINES.md
-BUSINESS-RULES.md
-VALIDATION-ERROR-SPEC.md
-API-SPEC.md
-MODULES.md
-BACKEND-STANDARDS.md
-```
+### Leave
+- Only APPROVED allocations provide usable balance.
+- Approval consumes balance exactly once.
+- REFUSED leave consumes nothing.
+- Block overlap with PENDING/APPROVED requests.
+- Re-check balance during approval.
 
-### Salary Configuration
+### Payrun
+- Step 1 eligibility preview must NOT persist a Payrun.
+- Step 2 creates DRAFT only after explicit employee selection.
+- Compute is idempotent before validation.
+- Blocking errors prevent Validate.
+- `PAID` is immutable.
+- Mark Paid records state only; no real bank/payment integration.
 
-Read:
+### Payslip
+- Generated only by Payrun computation.
+- Preserve historical snapshots.
+- Later Contract/Salary Rule changes must not alter finalized Payslips.
 
-```text
-BUSINESS-RULES.md
-VALIDATION-ERROR-SPEC.md
-API-SPEC.md
-MODULES.md
-BACKEND-STANDARDS.md
-```
+---
 
-### Payrun / Payslip / Payroll Engine
-
-Read:
-
-```text
-01-USER-FLOWS.md
-02-ROLES-PERMISSIONS.md
-03-STATE-MACHINES.md
-BUSINESS-RULES.md
-VALIDATION-ERROR-SPEC.md
-API-SPEC.md
-MODULES.md
-BACKEND-STANDARDS.md
-```
-
-Also read only the relevant payroll sections of `TEST-CASES.md`.
-
-### PDF / Email / Dashboard
-
-Read:
-
-```text
-BUSINESS-RULES.md
-API-SPEC.md
-MODULES.md
-```
-
-and only the relevant test sections.
-
-## 5. Parallel Backend Ownership
+## 5. Parallel Ownership
 
 ### Group A — Platform + HR Core
-
-Owns:
 
 ```text
 auth
@@ -263,20 +195,7 @@ employees
 contracts
 ```
 
-Sequence:
-
-```text
-Auth/User/RBAC
-→ Departments
-→ Working Schedules
-→ Employees
-→ Contracts
-→ Contract resolution
-```
-
-### Group B — HR Operations + Payroll
-
-Owns:
+### Group B — HR Ops + Payroll
 
 ```text
 attendance
@@ -285,278 +204,84 @@ salaryConfig
 payruns
 payslips
 notifications
-reports
+reports/dashboard
 ```
 
-Sequence:
+Do not duplicate another group's models/services.
 
-```text
-Time Off Types
-→ Salary Structures
-→ Salary Rules
-→ Attendance
-→ Leave Allocations
-→ Leave Requests
-→ Payrun Eligibility
-→ Payrun Create
-→ Compute
-→ Payslips
-→ Validate
-→ Mark Paid
-→ PDF / Email
-→ Dashboard
-```
+Avoid editing files owned by the other group unless the task explicitly requires integration.
 
-Do not duplicate Group A models/services inside Group B. Avoid modifying files owned by the other group unless the task explicitly requires integration.
+---
 
-## 6. Backend Architecture Rules
-
-Normal flow:
-
-```text
-Route
-→ Middleware
-→ Controller
-→ Service
-→ Model / exported module service
-```
-
-- Routes: path, HTTP method, auth, authorization, validation, controller binding.
-- Controllers: parse request, call service, send response, pass errors.
-- Services: business rules, state transitions, cross-model coordination.
-- Models: schema, indexes, persistence constraints.
-- Frontend: never authoritative payroll/business logic.
-
-Do not call controllers from other modules. Prefer exported services for cross-module business access.
-
-## 7. Non-Negotiable Business Rules
-
-### Contracts
-
-- Preserve historical Contracts.
-- Date ranges determine period applicability.
-- Exactly one applicable Contract is required for payroll.
-- No applicable Contract is blocking.
-- Multiple applicable Contracts are blocking.
-- Never silently choose one when multiple match.
-
-### Working Schedule
-
-```text
-Expected time = End Time - Start Time - Break
-```
-
-Weekly Hours are derived by backend.
-
-### Attendance
-
-```text
-Actual worked time = CheckOut - CheckIn
-```
-
-Do not subtract scheduled break automatically from actual Attendance.
-
-Prevent a second open Check-In.
-
-Missing checkout becomes `MISSING_CHECKOUT` and is a non-blocking payroll warning by default.
-
-### Leave
-
-- Only approved allocations create usable balance.
-- Approved allocation-required leave consumes balance exactly once.
-- REFUSED leave does not consume balance.
-- Block a new request overlapping another `PENDING` or `APPROVED` request for the same Employee.
-- Approval re-checks balance.
-
-### Salary Rules
-
-- Execute in ascending `sequence`.
-- Calculation types are only `FIXED`, `PERCENTAGE`, `FORMULA`.
-- Categories are only `BASIC`, `ALLOWANCE`, `GROSS`, `DEDUCTION`, `NET`.
-- Formula handling must be safe.
-- Never use `eval`, `Function(...)`, arbitrary JavaScript/Python, shell execution, or other executable user code.
-
-### Payrun
-
-Creation is two-step.
-
-Step 1:
-
-```text
-Salary Structure + Period + optional filters
-→ eligibility preview
-```
-
-Step 1 must not create a Payrun.
-
-Step 2:
-
-```text
-explicit Employee selection
-→ create DRAFT Payrun
-```
-
-State flow:
-
-```text
-DRAFT → COMPUTED → VALIDATED → PAID
-```
-
-`COMPUTED` may be recomputed before validation without creating duplicate Payslips.
-
-Blocking payroll errors prevent Validate.
-
-Missing bank details and attendance exceptions are warnings by default.
-
-### Payslip
-
-- Payslips are generated by Payrun computation.
-- Do not expose arbitrary salary-result creation.
-- Historical Payslips preserve snapshots of the values used.
-- Later Contract or Salary Rule changes must not modify old finalized Payslips.
-
-### Paid Payroll
-
-`PAID` is immutable in the normal workflow.
-
-Mark Paid records payroll state only. It does not perform a real bank transfer.
-
-## 8. API Rules
-
-Follow `docs/API-SPEC.md`.
-
-Do not invent alternate endpoints.
-
-Use explicit business-action endpoints, for example:
-
-```text
-POST /time-off/requests/:id/approve
-POST /time-off/requests/:id/refuse
-
-POST /payroll/payruns/:id/compute
-POST /payroll/payruns/:id/validate
-POST /payroll/payruns/:id/mark-paid
-```
-
-Do not implement generic state manipulation such as:
-
-```text
-PATCH /payroll/payruns/:id
-{ "status": "PAID" }
-```
-
-Employee self-service must enforce ownership on the backend.
-
-## 9. Validation / Error Rules
-
-Reuse existing IDs from `VALIDATION-ERROR-SPEC.md`.
-
-Do not invent a new domain error ID when an existing one already covers the case.
-
-Known decisions:
-
-```text
-Missing required Employee department/position
-→ reject
-
-Insufficient leave balance
-→ reject request / block approval and re-check on approval
-
-Salary Structure with no active rules
-→ blocking for payroll computation
-
-Missing checkout / attendance exception
-→ non-blocking WARNING by default
-```
-
-## 10. Security Rules
-
-- Hash passwords.
-- Never return plaintext passwords or password hashes.
-- No public Admin registration.
-- Enforce RBAC on backend.
-- Enforce Employee resource ownership on backend.
-- Validate incoming IDs and payloads.
-- Do not expose stack traces or environment secrets.
-- Do not execute arbitrary salary-rule code.
-- Do not trust client-supplied Employee IDs for Employee self-service actions.
-
-## 11. Codex Working Rules
+## 6. Codex Scope Rules
 
 For every task:
 
-1. Inspect existing code first.
-2. Read `AGENTS.md`.
-3. Read only the relevant docs above.
-4. Identify briefly which files need changes.
-5. Implement only the requested backend scope.
-6. Do not modify frontend unless explicitly asked.
-7. Do not refactor unrelated modules.
-8. Do not rename documented endpoints, roles, statuses, or error IDs.
-9. Reuse existing utilities/services before creating duplicates.
-10. Keep cross-module dependencies explicit.
-11. Add/update targeted tests when practical.
-12. Run relevant tests/lint/build commands.
-13. Report changed files, implemented behavior, checks run, and unresolved issues.
+- Inspect existing code first.
+- Change only the requested module.
+- Preserve working behavior unless the prompt explicitly changes it.
+- Do not rewrite a working module wholesale for a small fix.
+- Do not refactor unrelated files.
+- Do not modify frontend during backend-only tasks.
+- Do not modify backend during frontend-only tasks.
+- Reuse existing utilities/services.
+- Keep cross-module access through exported services.
+- Do not invent endpoints, roles, statuses, calculations, or error IDs.
+- If a genuinely new unresolved conflict blocks implementation, stop and report it.
 
-Do not create unused abstractions or empty architecture-only folders.
-
-## 12. Conflict Handling
-
-### Known resolved conflicts — do not stop
+Known resolved conflicts should NOT stop work:
 
 ```text
-DERIVED_FORMULA vs FORMULA
-→ FORMULA wins
-
-CONTRIBUTION vs canonical Salary Rule categories
-→ do not use CONTRIBUTION
-
-REJECTED vs REFUSED
-→ REFUSED wins
-
-ACTIVE Contract vs RUNNING Contract
-→ RUNNING wins
-
-Missing DATABASE-SPEC.md
-→ DATABASE-SPEC is not required in the current repo
+DERIVED_FORMULA → FORMULA
+CONTRIBUTION → not canonical
+REJECTED → REFUSED
+Contract ACTIVE → RUNNING
+missing DATABASE-SPEC.md → ignore
 ```
 
-### New conflicts
+---
 
-For any genuinely different unresolved conflict:
+## 7. Testing Policy — SAVE TIME/CREDITS
+
+Do **not** run the complete test suite after every small task.
+
+### Tiny change
+- syntax check changed JS files
+- run directly related test file only if useful
+
+### Feature/module change
+- run module-specific tests only
+
+### Full test suite
+Run only:
+- after a major module is finished,
+- before merging branches,
+- before deployment/final demo,
+- after shared/core changes that may affect many modules,
+- or when explicitly requested.
+
+Do not repeatedly rerun unrelated tests.
+
+---
+
+## 8. Git / PR Policy
+
+Do not automatically:
 
 ```text
-STOP
-→ identify both conflicting rules
-→ explain which implementation decision is blocked
-→ do not silently guess
+commit
+push
+create PR
+run GitHub CLI
 ```
 
-Do not stop merely because a stale occurrence of one of the known resolved conflicts still exists.
+unless explicitly requested.
 
-## 13. Change Control
+Never spend task time fixing GitHub authentication unless the user asked for Git operations.
 
-Do not silently change:
+---
 
-```text
-roles
-canonical statuses
-state transitions
-business calculations
-API paths
-request/response meaning
-error IDs
-ownership rules
-module ownership
-historical payroll behavior
-```
-
-If implementation genuinely requires a specification change, report it first.
-
-## 14. Hackathon Priority
-
-Prioritize this working backend path first:
+## 9. Current Priority
 
 ```text
 Auth/RBAC
@@ -569,30 +294,24 @@ Auth/RBAC
 → Payslip
 → Validate
 → Mark Paid
+→ Attendance / Time Off
+→ PDF / Email
+→ Dashboard
 ```
 
-Then complete:
+Prioritize a stable end-to-end demo over extra architecture or optional features.
+
+---
+
+## 10. Completion Report
+
+After a Codex task, report only:
 
 ```text
-Attendance
-Time Off
-PDF
-Email
-Dashboard
+Changed files
+What was implemented
+Targeted checks/tests run
+Any real unresolved blocker
 ```
 
-Do not spend core implementation time on microservices, Redis, Kubernetes, complex event systems, real payment integration, statutory integrations, AI features, or unrelated refactors.
-
-## 15. Definition of Done
-
-A backend task is complete when:
-
-- it matches the documented API,
-- RBAC is enforced,
-- business logic is in services,
-- validation/error IDs are consistent,
-- canonical states/roles are preserved,
-- no unrelated module is broken,
-- relevant checks pass,
-- no hardcoded payroll result is introduced,
-- historical payroll behavior remains intact.
+Do not perform additional work beyond the requested scope.
