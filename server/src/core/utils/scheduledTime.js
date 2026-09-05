@@ -18,7 +18,12 @@ function createScheduleAccess(schedules = {}) {
         typeof breakMinutes !== 'number' || !Number.isFinite(breakMinutes) || breakMinutes < 0 || breakMinutes > (end - start) / 60000) {
       throw new AppError('DEPENDENCY_UNAVAILABLE', 'Invalid schedule context.', 503);
     }
-    return { date: dateOnly(value.date), start, expectedMinutes: (end - start) / 60000 - breakMinutes };
+    return {
+      date: dateOnly(value.date),
+      start,
+      end,
+      expectedMinutes: (end - start) / 60000 - breakMinutes,
+    };
   }
   async function duration(employeeId, startDate, endDate, unit, options = {}) {
     if (typeof schedules.getWorkingIntervals !== 'function') dependency('getWorkingIntervals');

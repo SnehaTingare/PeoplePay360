@@ -25,7 +25,7 @@ const input = {
 const rejectsCode = (work, code) => assert.rejects(work, error => error.code === code);
 const throwsCode = (work, code) => assert.throws(work, error => error.code === code);
 
-function fixture({ failLink = false } = {}) {
+function fixture({ failLink = false, failEmail = false } = {}) {
   const store = createStore();
   const Model = store.model(['email']);
   Model.findById = employeeId => Model.findOne({ _id: employeeId });
@@ -51,7 +51,20 @@ function fixture({ failLink = false } = {}) {
     setLinkedEmployeeAccountStatus: (accountId, employeeId, status) => userService.setLinkedEmployeeAccountStatus(accountId, employeeId, status, { Model: UserModel }),
     removeProvisionedEmployeeAccount: accountId => userService.removeProvisionedEmployeeAccount(accountId, { Model: UserModel }),
   };
-  return { Model, UserModel, users, service: createEmployeeService({ Model, departments, schedules, users }) };
+  const deliveries = [];
+  const emails = {
+    sendTemporaryPassword: async message => {
+      deliveries.push(message);
+      if (failEmail) throw new Error('private SMTP failure');
+    },
+  };
+  return {
+    Model,
+    UserModel,
+    users,
+    deliveries,
+    service: createEmployeeService({ Model, departments, schedules, users, emails }),
+  };
 }
 
 test('Employee schema declares unique identifiers and relationships', () => {
@@ -66,7 +79,7 @@ test('Employee schema declares unique identifiers and relationships', () => {
 });
 
 test('Employee creates with generated ID, normalized data, and valid relationships', async () => {
-  const { service, UserModel } = fixture();
+  const { service, UserModel, deliveries } = fixture();
   const result = await service.createEmployee({ ...input, bankDetails: {
     accountHolderName: 'Rahul Sharma', accountNumber: '1234', bankName: 'Example Bank', ifscCode: 'exam0001',
   } });
@@ -85,6 +98,12 @@ test('Employee creates with generated ID, normalized data, and valid relationshi
   assert.equal(accountProvisioning.email, input.email);
   assert.ok(accountProvisioning.temporaryPassword);
   assert.equal(accountProvisioning.mustChangePassword, true);
+  assert.equal(accountProvisioning.emailDelivery, 'SENT');
+  assert.deepEqual(deliveries, [{
+    to: input.email,
+    firstName: input.firstName,
+    temporaryPassword: accountProvisioning.temporaryPassword,
+  }]);
   assert.equal(employee.department, departmentId);
   assert.equal(employee.workingSchedule, scheduleId);
   assert.equal(employee.employmentStatus, 'ACTIVE');
@@ -93,6 +112,15 @@ test('Employee creates with generated ID, normalized data, and valid relationshi
   const laterRead = await service.getEmployee(employee._id);
   assert.equal('temporaryPassword' in laterRead, false);
   assert.equal('accountProvisioning' in laterRead, false);
+});
+
+test('Employee creation remains successful when invitation email delivery fails', async () => {
+  const { service, Model, UserModel, deliveries } = fixture({ failEmail: true });
+  const result = await service.createEmployee(input);
+  assert.equal(result.accountProvisioning.emailDelivery, 'FAILED');
+  assert.equal(deliveries.length, 1);
+  assert.equal(Model.rows.size, 1);
+  assert.equal(UserModel.rows.size, 1);
 });
 
 test('standalone User creation rejects EMPLOYEE and manual linkage fields', async () => {

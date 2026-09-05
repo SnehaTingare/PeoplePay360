@@ -17,6 +17,15 @@ const messages = {
   'EMP-003': 'Department and job position are required.',
   'EMP-004': 'This employee is inactive.',
   'EMP-005': 'You cannot access another employee’s record.',
+  'CTR-001': 'Contract start date must be before or equal to end date.',
+  'CTR-002': 'Another contract for this employee overlaps the selected period.',
+  'CTR-004': 'Contract wage is required for wage-based payroll.',
+  'CTR-005': 'Contract wage cannot be negative.',
+  'CTR-006': 'Contract Salary Structure is required.',
+  'ATT-001': 'No open check-in exists for this employee.',
+  'ATT-002': 'Check-out must be later than check-in.',
+  'ATT-003': 'An open check-in already exists for this employee.',
+  'ATT-005': 'Only HR or Payroll users can correct attendance records.',
   DUPLICATE_CODE: 'That department code is already in use.',
   RESOURCE_CONFLICT: 'This record changed. Reload it and try again.',
   VALIDATION_ERROR: 'Please review the highlighted information.',
@@ -27,7 +36,7 @@ export const getApiError = (error, fallback = 'Something went wrong. Please try 
   const payload = error?.response?.data
   return {
     code: payload?.code,
-    message: messages[payload?.code] || payload?.message || fallback,
+    message: payload?.message || messages[payload?.code] || fallback,
     details: payload?.details || {},
     status: error?.response?.status,
   }

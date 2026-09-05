@@ -2,19 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/svg+xml" href="/src/assets/favicon.svg" />    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PeoplePay360</title>
-    <script>
-      (() => {
-        const saved = localStorage.getItem('peoplepay360-theme')
-        const theme = saved === 'dark' || saved === 'light'
-          ? saved
-          : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-        document.documentElement.dataset.theme = theme
-        document.documentElement.style.colorScheme = theme
-      })()
-    </script>
   </head>
   <body>
     <div id="root"></div>

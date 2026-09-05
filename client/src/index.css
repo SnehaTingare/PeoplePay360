@@ -32,6 +32,18 @@ h2 { color: #101828; }
 .brand--auth { margin-bottom: 2.5rem; }
 .brand--auth strong { color: #101828; }
 .brand--auth small { color: var(--muted); }
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.brand-mark img {
+  width: 24px;
+  height: 24px;
+  display: block;
+  object-fit: contain;
+}
 
 .auth-layout { min-height: 100vh; display: grid; grid-template-columns: minmax(320px, 42%) 1fr; background: white; }
 .auth-aside { padding: clamp(2rem, 6vw, 5rem); display: flex; flex-direction: column; justify-content: space-between; color: white; background: #172554; overflow: hidden; position: relative; }
@@ -146,10 +158,27 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
 .checkbox-row input { width: 17px; height: 17px; accent-color: var(--primary); }
 .bank-fields { margin-top: 1rem; }
 .employee-filters { padding: 1rem; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: minmax(220px, 1.5fr) repeat(4, minmax(145px, 1fr)); gap: .7rem; }
+.employee-view-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem 1rem; border-bottom: 1px solid var(--border); color: var(--muted); font-size: .82rem; font-weight: 650; }
+.view-toggle { display: inline-flex; gap: .25rem; padding: .2rem; border: 1px solid var(--border); border-radius: 8px; background: #f8f9fb; }
+.view-toggle button { border: 0; border-radius: 6px; padding: .45rem .75rem; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
+.view-toggle button.active { background: var(--primary); color: #fff; }
+.employee-kanban { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; padding: 1rem; }
+.employee-card { min-width: 0; padding: 1.1rem; border: 1px solid var(--border); border-radius: 12px; background: #fff; display: grid; gap: 1rem; }
+.employee-card-top { display: flex; align-items: center; gap: .8rem; }
+.employee-avatar { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 42px; border: 1px solid #aebcf0; border-radius: 10px; background: #f0f3ff; color: #3157d5; font-size: .8rem; font-weight: 800; }
+.employee-card-top > div { min-width: 0; display: grid; gap: .2rem; }
+.employee-card-name { color: #101828; font-weight: 750; text-decoration: none; overflow-wrap: anywhere; }
+.employee-card-name:hover { color: var(--primary); }
+.employee-card-top small { color: var(--muted); overflow-wrap: anywhere; }
+.employee-card-meta { display: flex; align-items: center; justify-content: space-between; gap: .7rem; color: var(--muted); font-size: .82rem; }
+.employee-card-actions { display: flex; gap: .8rem; padding-top: .75rem; border-top: 1px solid #eaecf0; }
 .employee-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .detail-section { padding: 1.25rem; }
 .detail-section h2 { margin-bottom: 1rem; font-size: 1rem; }
 .detail-section dl { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
+.schedule-day-list { display: grid; gap: .6rem; margin-top: 1.1rem; }
+.schedule-day { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(120px, 1fr) auto; gap: .7rem; align-items: center; padding-top: .6rem; border-top: 1px solid #eaecf0; font-size: .84rem; }
+.schedule-day span, .schedule-day small { color: var(--muted); }
 .detail-item { min-width: 0; }
 .detail-item dt { margin-bottom: .2rem; color: var(--muted); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .detail-item dd { margin: 0; color: #1d2939; overflow-wrap: anywhere; }
@@ -164,6 +193,8 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
 .inline-form { margin-bottom: 1rem; padding: clamp(1rem, 3vw, 1.5rem); }
 .inline-form h2 { margin-bottom: 1rem; font-size: 1.05rem; }
 .operation-filters { padding: 1rem; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: repeat(5, minmax(145px, 1fr)); gap: .7rem; }
+.filter-field { display: grid; gap: .42rem; }
+.filter-field label { color: #667085; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .check-grid { display: grid; align-content: center; gap: .7rem; }
 .balance-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: .75rem; margin-bottom: 1rem; }
 .balance-card { padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: white; display: grid; gap: .2rem; }
@@ -281,6 +312,7 @@ td > div:not(.row-actions) { display: flex; flex-direction: column; gap: .15rem;
   .app-main { margin-left: 0; }
   .menu-button { display: block; border: 0; background: none; color: #344054; font-size: 1.3rem; cursor: pointer; }
   .form-grid, .filters, .schedule-form-top, .employee-filters, .contract-filters, .operation-filters, .dashboard-filters { grid-template-columns: 1fr; }
+  .employee-kanban { grid-template-columns: 1fr; }
   .employee-hub { align-items: stretch; flex-direction: column; }
   .section-toolbar { align-items: stretch; flex-direction: column; }
   .payslip-summary { grid-template-columns: 1fr; }
@@ -342,19 +374,233 @@ input:focus, select:focus, textarea:focus { border-color: var(--violet); box-sha
 .sidebar nav a:hover { background: rgba(255,255,255,.08); transform: translateX(2px); }
 .sidebar nav a.active { color: #fff; background: linear-gradient(90deg, rgba(137,119,242,.38), rgba(137,119,242,.12)); }
 .sidebar nav a.active::before { opacity: 1; }
+
+/* Dropdown parent button */
+.sidebar nav .nav-group-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  width: 100%;
+  min-height: 44px;
+  padding: .72rem .8rem;
+
+  color: #bbb7d9;
+  font-size: .87rem;
+  text-align: left;
+
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+
+  transition: background .16s ease, color .16s ease, transform .16s ease;
+}
+
+.sidebar nav .nav-group-button:hover {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.sidebar nav .nav-group-button.active {
+  color: #fff;
+  background: linear-gradient(
+    90deg,
+    rgba(137,119,242,.38),
+    rgba(137,119,242,.12)
+  );
+}
+
+.sidebar nav .nav-group-button::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  width: 3px;
+  height: 22px;
+  border-radius: 0 4px 4px 0;
+  background: #a598ff;
+  opacity: 0;
+}
+
+.sidebar nav .nav-group-button.active::before {
+  opacity: 1;
+}
+
+/* Dropdown children */
+.nav-submenu {
+  display: grid;
+  gap: .18rem;
+  margin: .2rem 0 .35rem;
+  padding-left: 1rem;
+}
+
+/* Smaller child navigation links */
+.sidebar nav a.nav-submenu-link {
+  min-height: 38px;
+  padding: .55rem .75rem;
+  font-size: .82rem;
+}
+
+/* Dropdown arrow */
+.nav-arrow {
+  margin-left: auto;
+  font-size: .85rem;
+  transition: transform .2s ease;
+}
+
+.nav-arrow--open {
+  transform: rotate(180deg);
+}
 .sidebar-footer { gap: .65rem; padding: 1rem .55rem .35rem; }
 .sidebar-profile { display: flex; align-items: center; gap: .65rem; width: 100%; padding: .58rem; border: 0; border-radius: 11px; color: #fff; text-align: left; background: rgba(255,255,255,.06); cursor: pointer; }
 .sidebar-profile > span:last-child, .topbar-user > span:last-child { min-width: 0; display: grid; gap: .1rem; }
 .sidebar-profile strong, .topbar-user strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .78rem; }
 .sidebar-profile small { color: #aaa5cf; font-size: .68rem; }
+.change-password-button {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+
+  width: 100%;
+  padding: .65rem .6rem;
+
+  border: 0;
+  border-radius: 9px;
+
+  background: transparent;
+  color: #c9c5e4;
+
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+
+  text-align: left;
+
+  transition: background .15s ease, color .15s ease;
+}
+
+.change-password-button .icon {
+  fill: currentColor;
+}
+
+.change-password-button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .08);
+}
 .signout-button { display: flex; align-items: center; gap: .65rem; width: 100%; padding: .65rem .6rem; border: 0; color: #c9c5e4; background: transparent; border-radius: 9px; cursor: pointer; font-weight: 650; text-align: left; transition: background .15s ease, color .15s ease; }
 .signout-button:hover { color: #fff; background: rgba(255,255,255,.08); }
 .app-main { margin-left: 270px; transition: margin-left .22s ease; }
-.app-shell--collapsed .sidebar { width: 78px; }
-.app-shell--collapsed .app-main { margin-left: 78px; }
-.app-shell--collapsed .brand-copy, .app-shell--collapsed .sidebar-label, .app-shell--collapsed .sidebar nav a span, .app-shell--collapsed .sidebar-profile > span:last-child, .app-shell--collapsed .signout-button span, .app-shell--collapsed .sidebar-collapse { display: none; }
-.app-shell--collapsed .sidebar .brand { justify-content: center; padding-inline: 0; }
-.app-shell--collapsed .sidebar nav a, .app-shell--collapsed .sidebar-profile, .app-shell--collapsed .signout-button { justify-content: center; }
+/* ================================
+   COLLAPSED SIDEBAR
+================================ */
+
+.app-shell--collapsed .sidebar {
+  width: 78px;
+}
+
+.app-shell--collapsed .app-main {
+  margin-left: 78px;
+}
+
+/* Hide PeoplePay360 text */
+.app-shell--collapsed .brand-copy {
+  display: none;
+}
+
+/* Hide sidebar labels */
+.app-shell--collapsed .sidebar-label {
+  display: none;
+}
+
+
+/* ----------------
+   BRAND / HAMBURGER
+---------------- */
+
+.app-shell--collapsed .brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* IMPORTANT: keep hamburger visible */
+.app-shell--collapsed .sidebar-collapse {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: auto !important;
+  flex-shrink: 0;
+}
+.app-shell--collapsed .brand-mark {
+  display: none;
+}
+
+
+/* ----------------
+   NORMAL NAV ITEMS
+---------------- */
+
+.app-shell--collapsed .sidebar nav a {
+  justify-content: center;
+}
+
+.app-shell--collapsed .sidebar nav a span {
+  display: none;
+}
+
+
+/* ----------------
+   NAV DROPDOWN GROUPS
+---------------- */
+
+.app-shell--collapsed .sidebar nav .nav-group-button {
+  justify-content: center;
+}
+
+.app-shell--collapsed .sidebar nav .nav-group-button span:not(.nav-arrow) {
+  display: none;
+}
+
+.app-shell--collapsed .nav-arrow {
+  display: none;
+}
+
+.app-shell--collapsed .nav-submenu {
+  display: none;
+}
+
+
+/* ----------------
+   CHANGE PASSWORD
+---------------- */
+
+.app-shell--collapsed .change-password-button {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.app-shell--collapsed .change-password-button span {
+  display: none;
+}
+
+
+/* ----------------
+   SIGN OUT
+---------------- */
+
+.app-shell--collapsed .signout-button {
+  justify-content: center;
+}
+
+.app-shell--collapsed .signout-button span {
+  display: none;
+}
 .topbar { height: 76px; padding: 0 clamp(1.25rem, 4vw, 2.7rem); border: 0; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.86); backdrop-filter: blur(14px); }
 .topbar-title, .topbar-actions { display: flex; align-items: center; gap: 1rem; }
 .topbar-title p { margin: 0 0 .12rem; color: #8a879d; font-size: .68rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }

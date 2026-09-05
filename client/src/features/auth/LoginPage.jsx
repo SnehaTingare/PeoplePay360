@@ -27,7 +27,11 @@ export default function LoginPage() {
     } finally { setBusy(false) }
   }
 
-  return <div className="auth-card"><div className="brand brand--auth"><span className="brand-mark">P</span><div><strong>PeoplePay360</strong><small>People and payroll, connected</small></div></div><div className="auth-heading"><h1>Welcome back</h1><p>Sign in to continue to your workspace.</p></div><ErrorBanner message={error} /><form onSubmit={submit} className="stack">
+  return <div className="auth-card"><div className="brand brand--auth">
+    <span className="brand-mark">
+  <img src="/favicon.svg" alt="PeoplePay360" />
+</span>
+<div><strong>PeoplePay360</strong><small>People and payroll, connected</small></div></div><div className="auth-heading"><h1>Welcome back</h1><p>Sign in to continue to your workspace.</p></div><ErrorBanner message={error} /><form onSubmit={submit} className="stack">
     <FormField label="Email" htmlFor="email"><input id="email" type="email" autoComplete="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="you@company.com" /></FormField>
     <FormField label="Password" htmlFor="password"><input id="password" type="password" autoComplete="current-password" required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Enter your password" /></FormField>
     <button className="button button--full" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>

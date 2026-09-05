@@ -20,14 +20,42 @@ function allowed(value, fields) {
   if (unknown) fail(errors.VALIDATION_ERROR, unknown, 'Unexpected request field.');
 }
 function name(value, field) {
-  if (typeof value !== 'string' || !value.trim()) fail(errors.VALIDATION_ERROR, field, `${field} is required.`);
-  return value.trim();
+  if (typeof value !== 'string') {
+    fail(errors.VALIDATION_ERROR, field, `${field} is required.`);
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    fail(errors.VALIDATION_ERROR, field, `${field} is required.`);
+  }
+
+  if (normalized.length > 80) {
+    fail(errors.VALIDATION_ERROR, field, `${field} must be at most 80 characters.`);
+  }
+
+  if (!/^[\p{L}][\p{L}\s'-]*$/u.test(normalized)) {
+    fail(errors.VALIDATION_ERROR, field, `${field} contains invalid characters.`);
+  }
+
+  return normalized;
 }
 function email(value) {
-  if (typeof value !== 'string' || !EMAIL_PATTERN.test(value.trim())) {
+  if (typeof value !== 'string') {
     fail(errors.VALIDATION_ERROR, 'email', 'A valid email is required.');
   }
-  return value.trim().toLowerCase();
+
+  const normalized = value.trim().toLowerCase();
+
+  if (
+    !normalized ||
+    normalized.length > 254 ||
+    !EMAIL_PATTERN.test(normalized)
+  ) {
+    fail(errors.VALIDATION_ERROR, 'email', 'A valid email is required.');
+  }
+
+  return normalized;
 }
 function positiveInteger(value, fallback, field, max = Number.MAX_SAFE_INTEGER) {
   if (value === undefined) return fallback;
