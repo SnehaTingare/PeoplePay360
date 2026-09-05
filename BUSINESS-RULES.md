@@ -448,7 +448,7 @@ NET
 ```
 
 Rules:
-- Structure must have a unique name/code according to team policy.
+- Salary Structure `code` must be unique.
 - Only active rules participate in computation.
 - Payrun's selected Salary Structure determines which rules are applied.
 

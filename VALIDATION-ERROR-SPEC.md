@@ -57,7 +57,7 @@ Authentication is missing or invalid.
 |---|---|---|---|
 | EMP-001 | Employee email duplicates another employee where uniqueness is required | Validation | Reject. |
 | EMP-002 | Employee assigned as own manager | Validation | Reject. |
-| EMP-003 | Missing required department/position if configured as required | Validation | Reject/save incomplete according to team policy. |
+| EMP-003 | Missing required department/position if configured as required | Validation | Reject. |
 | EMP-004 | Employee inactive | Business rule | Keep history; exclude from normal future payroll eligibility. |
 | EMP-005 | Employee user accesses another employee's private record | 403 Forbidden | Reject. |
 
@@ -111,7 +111,7 @@ Authentication is missing or invalid.
 |---|---|---|---|
 | LEV-001 | Start Date > End Date | Validation | Reject. |
 | LEV-002 | Allocation-required leave has no approved allocation | Validation/approval block | Cannot approve. |
-| LEV-003 | Requested duration > remaining allocation | Validation/approval block | Reject or block approval. |
+| LEV-003 | Requested duration > remaining allocation | Validation/approval block | Reject request; approval must re-check balance. |
 | LEV-004 | Leave overlaps another `PENDING` or `APPROVED` leave request for the same employee | Validation | Block the new overlapping request. |
 | LEV-005 | Allocation validity expired | Validation | Do not use expired balance. |
 | LEV-006 | Refused leave request | No balance change | Must not consume allocation. |
@@ -129,7 +129,7 @@ Authentication is missing or invalid.
 | STR-001 | Missing structure name/code | Validation | Reject. |
 | STR-002 | Duplicate structure code where unique is required | Validation | Reject. |
 | STR-003 | Inactive Salary Structure selected for new Payrun | Validation | Reject or hide from selection. |
-| STR-004 | Structure has no active rules | Blocking/warning | Do not compute meaningful payroll until rules exist. |
+| STR-004 | Structure has no active rules | Blocking | Do not compute meaningful payroll until rules exist. |
 
 ---
 
@@ -165,7 +165,7 @@ Authentication is missing or invalid.
 | PAY-010 | Mark Paid requested before VALIDATED | State transition error | Reject. |
 | PAY-011 | Validate requested before COMPUTED | State transition error | Reject. |
 | PAY-012 | Missing bank details | Warning | Surface before finalization/payment readiness. |
-| PAY-013 | Missing/exception attendance | Warning/blocking by policy | Surface clearly. |
+| PAY-013 | Missing/exception attendance | Non-blocking Warning | Surface clearly by default. |
 | PAY-014 | Payroll rule calculation failure | Blocking | Keep Payrun unvalidated. |
 | PAY-015 | Employee is inactive | Eligibility exclusion | Do not include in normal future Payrun eligibility. |
 

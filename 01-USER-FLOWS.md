@@ -606,7 +606,7 @@ For our implementation:
 ```text
 FIXED
 PERCENTAGE
-DERIVED_FORMULA
+FORMULA
 ```
 
 #### Postcondition

@@ -351,7 +351,7 @@ Contract B: Jun-Dec
 
 **Expected**
 - Attendance status/exception = `MISSING_CHECKOUT`.
-- Payroll/HR warning can surface according to policy.
+- Payroll surfaces `PAY-013` as non-blocking WARNING by default.
 
 ---
 
@@ -437,7 +437,7 @@ Status = APPROVED
 - Request 4 days.
 
 **Expected**
-- Reject or block approval with `LEV-003`.
+- Reject request with `LEV-003`.
 
 ---
 
@@ -450,8 +450,7 @@ Status = APPROVED
 - Create a new request: 11-13 Sep.
 
 **Expected**
-- Block the new overlapping request.
-- Return/align with `LEV-004`.
+- Reject new overlapping request with `LEV-004`.
 
 ---
 
