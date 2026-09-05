@@ -22,8 +22,9 @@ async function startServer() {
 }
 
 if (require.main === module) {
-  startServer().catch(() => {
+  startServer().catch(error => {
     console.error('PeoplePay360 API failed to start.');
+    console.error(error);
     process.exitCode = 1;
   });
 }
