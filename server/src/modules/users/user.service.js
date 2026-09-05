@@ -7,6 +7,7 @@ const AppError = require('../../core/errors/AppError');
 const errors = require('../../core/errors/errorCodes');
 const paginate = require('../../core/http/pagination');
 const { generateTemporaryPassword, hashPassword } = require('../../core/security/password');
+const accountEmailService = require('../notifications/accountEmail.service');
 const User = require('./user.model');
 
 const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -84,7 +85,10 @@ async function listUsers({ role, accountStatus, q, page, limit }) {
 
 const getUser = async id => serializeUser(await findByIdOrThrow(id));
 
-async function createUser({ firstName, lastName, email, role }) {
+async function createUser(
+  { firstName, lastName, email, role },
+  { emails = accountEmailService } = {},
+) {
   if (!isCanonicalRole(role)) throw appError(errors.USER_INVALID_ROLE);
   if (role === roles.EMPLOYEE) throw appError(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING);
   const normalizedEmail = normalizeEmail(email);
@@ -98,7 +102,17 @@ async function createUser({ firstName, lastName, email, role }) {
       _id, uniqueId: createUniqueId(_id), firstName, lastName, email: normalizedEmail, passwordHash,
       role, accountStatus: ACCOUNT_STATUSES.ACTIVE, employeeId: null, mustChangePassword: true,
     });
-    return { user: serializeUser(user), temporaryPassword };
+    let emailDelivery = 'SENT';
+    try {
+      await emails.sendTemporaryPassword({
+        to: normalizedEmail,
+        firstName,
+        temporaryPassword,
+      });
+    } catch {
+      emailDelivery = 'FAILED';
+    }
+    return { user: serializeUser(user), temporaryPassword, emailDelivery };
   } catch (error) {
     if (duplicateEmail(error)) throw appError(errors.USER_DUPLICATE_EMAIL);
     throw error;

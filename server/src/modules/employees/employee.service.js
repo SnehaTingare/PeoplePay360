@@ -5,6 +5,7 @@ const Employee = require('./employee.model');
 const departmentService = require('../departments/department.service');
 const scheduleService = require('../schedules/schedule.service');
 const userService = require('../users/user.service');
+const accountEmailService = require('../notifications/accountEmail.service');
 const AppError = require('../../core/errors/AppError');
 const paginate = require('../../core/http/pagination');
 
@@ -30,6 +31,7 @@ function createEmployeeService({
   departments = departmentService,
   schedules = scheduleService,
   users = userService,
+  emails = accountEmailService,
 } = {}) {
 
   async function getEmployee(id) {
@@ -284,14 +286,14 @@ function createEmployeeService({
       };
     };
 
+    let result;
+
     try {
       if (transactionCapable()) {
         const session =
           await mongoose.startSession();
 
         try {
-          let result;
-
           await session.withTransaction(
             async () => {
               result =
@@ -301,34 +303,33 @@ function createEmployeeService({
             }
           );
 
-          return result;
         } finally {
           await session.endSession();
         }
-      }
+      } else {
+        const created = {};
 
-      const created = {};
-
-      try {
-        return await persist(
-          null,
-          created
-        );
-      } catch (error) {
-        if (created.employee) {
-          await Model.deleteOne({
-            _id:
-              created.employee._id,
-          });
-        }
-
-        if (created.user) {
-          await users.removeProvisionedEmployeeAccount(
-            created.user._id
+        try {
+          result = await persist(
+            null,
+            created
           );
-        }
+        } catch (error) {
+          if (created.employee) {
+            await Model.deleteOne({
+              _id:
+                created.employee._id,
+            });
+          }
 
-        throw error;
+          if (created.user) {
+            await users.removeProvisionedEmployeeAccount(
+              created.user._id
+            );
+          }
+
+          throw error;
+        }
       }
 
     } catch (error) {
@@ -360,6 +361,24 @@ function createEmployeeService({
 
       throw error;
     }
+
+    let emailDelivery = 'SENT';
+
+    try {
+      await emails.sendTemporaryPassword({
+        to: result.accountProvisioning.email,
+        firstName: input.firstName,
+        temporaryPassword:
+          result.accountProvisioning.temporaryPassword,
+      });
+    } catch {
+      emailDelivery = 'FAILED';
+    }
+
+    result.accountProvisioning.emailDelivery =
+      emailDelivery;
+
+    return result;
   }
 
   async function updateEmployee(
