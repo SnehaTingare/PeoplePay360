@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { usersApi } from '.'
+import { useAuth } from '../../app/providers/authContext'
 import { getApiError } from '../../shared/api/apiError'
 import ConfirmDialog from '../../shared/components/ConfirmDialog/ConfirmDialog'
 import DataTable from '../../shared/components/DataTable/DataTable'
@@ -15,6 +16,8 @@ import { ROLES, ROLE_OPTIONS, roleLabel } from '../../shared/constants/roles'
 const INTERNAL_ROLE_OPTIONS = ROLE_OPTIONS.filter((role) => role !== ROLES.EMPLOYEE)
 
 export default function UsersPage() {
+  const { user: currentUser } = useAuth()
+  const currentUserId = currentUser?.id
   const location = useLocation()
   const [users, setUsers] = useState([])
   const [meta, setMeta] = useState(null)
@@ -29,10 +32,14 @@ export default function UsersPage() {
   const load = useCallback(async () => {
     setLoading(true); setError('')
     const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== ''))
-    try { const result = await usersApi.list(params); setUsers(result.data); setMeta(result.meta) }
+    try {
+      const result = await usersApi.list(params)
+      setUsers(currentUserId ? result.data.filter((user) => user.id !== currentUserId) : result.data)
+      setMeta(result.meta)
+    }
     catch (requestError) { setError(getApiError(requestError).message) }
     finally { setLoading(false) }
-  }, [filters])
+  }, [filters, currentUserId])
   useEffect(() => { const timer = setTimeout(load, filters.q ? 300 : 0); return () => clearTimeout(timer) }, [load, filters.q])
 
   const requestAction = (user, type) => setConfirm({

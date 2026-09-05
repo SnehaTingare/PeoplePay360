@@ -466,6 +466,31 @@ tbody tr:hover { background: #faf9ff; }
 .notification-wrap { position: relative; }
 .notification-popover { position: absolute; top: calc(100% + .65rem); right: 0; z-index: 40; width: min(320px, calc(100vw - 2rem)); padding: 1rem; border: 1px solid #e6e3f5; border-radius: 14px; background: #fff; box-shadow: 0 18px 42px rgba(34, 24, 82, .16); animation: modal-in .18s ease both; }
 .notification-popover > div { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }.notification-popover strong { color: #292440; font-size: .86rem; }.notification-popover button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; color: #817c92; background: transparent; font-size: 1.15rem; line-height: 1; cursor: pointer; }.notification-popover button:hover { color: var(--violet); background: #f4f2ff; }.notification-popover p { margin: .65rem 0 0; color: #77728a; font-size: .77rem; line-height: 1.5; }
+/* Notification Popover - Dark Mode */
+html[data-theme="dark"] .notification-popover {
+  background: #25243a;
+  border-color: #3a3854;
+  color: #f5f3ff;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="dark"] .notification-popover strong {
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .notification-popover button {
+  color: #aaa7bd;
+  background: transparent;
+}
+
+html[data-theme="dark"] .notification-popover button:hover {
+  color: #ffffff;
+  background: #343052;
+}
+
+html[data-theme="dark"] .notification-popover p {
+  color: #aaa7bd;
+}
 
 @media (max-width: 900px) { .sidebar { width: 270px; }.app-main, .app-shell--collapsed .app-main { margin-left: 0; }.sidebar-collapse { display: none; }.dashboard-grid { grid-template-columns: 1fr; } }
 @media (max-width: 800px) { .metric-grid { grid-template-columns: 1fr; }.topbar-user > span:last-child { display: none; }.page-content { padding: 1.25rem; }.sidebar { z-index: 60; }.sidebar-footer { padding-bottom: .7rem; } }
@@ -547,3 +572,102 @@ html[data-theme="dark"] .quick-action > .icon {
 @media (max-width: 520px) { .theme-toggle { width: 34px; padding: 0; justify-content: center; }.theme-toggle span { display: none; } }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+
+/* =========================================
+   NOTIFICATIONS PAGE - DARK MODE FIX
+   ========================================= */
+
+/* Main notification cards */
+html[data-theme="dark"] .notification-card {
+  background: #24233a;
+  border-bottom-color: #383650;
+  border-left-color: #5b46d8;
+  color: #f5f3ff;
+}
+
+/* Unread notification */
+html[data-theme="dark"] .notification-card--unread {
+  background: #2a2940;
+  border-left-color: #7357ff;
+}
+
+/* Notification title */
+html[data-theme="dark"] .notification-card-heading {
+  color: #f5f3ff;
+}
+
+html[data-theme="dark"] .notification-card-heading strong {
+  color: #f5f3ff;
+}
+
+/* Notification description */
+html[data-theme="dark"] .notification-card p {
+  color: #b8b5c9;
+}
+
+/* Footer - Unread / Read / timestamp */
+html[data-theme="dark"] .notification-card footer {
+  color: #9693aa;
+}
+
+/* Severity badge */
+html[data-theme="dark"] .notification-severity {
+  background: #35334d;
+  color: #d5d1e8;
+}
+
+/* Warning badge */
+html[data-theme="dark"] .notification-severity--warning {
+  background: #4a351b;
+  color: #ffbd63;
+}
+
+/* Action required badge */
+html[data-theme="dark"] .notification-severity--action_required {
+  background: #49282b;
+  color: #ff8585;
+}
+
+/* Notification filters */
+html[data-theme="dark"] .notification-filters {
+  background: #24233a;
+  border-bottom-color: #383650;
+}
+
+/* Filter buttons */
+html[data-theme="dark"] .notification-filters button {
+  background: #35334d;
+  color: #c7c4d8;
+}
+
+/* Active filter */
+html[data-theme="dark"] .notification-filters button.active {
+  background: #5b46d8;
+  color: #ffffff;
+}
+
+/* Hover effect */
+html[data-theme="dark"] .notification-card:hover {
+  background: #2d2b46;
+}
+
+/* Links / Mark read */
+html[data-theme="dark"] .notification-card a,
+html[data-theme="dark"] .notification-card button {
+  color: #8f7cff;
+}
+
+html[data-theme="dark"] .notification-card a:hover,
+html[data-theme="dark"] .notification-card button:hover {
+  color: #b0a3ff;
+}
+
+/* Empty state */
+html[data-theme="dark"] .notification-empty {
+  color: #aaa7bd;
+}
+
+/* Error state */
+html[data-theme="dark"] .notification-error {
+  color: #ff8585;
+}
