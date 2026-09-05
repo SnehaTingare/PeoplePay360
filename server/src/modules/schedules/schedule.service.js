@@ -13,12 +13,58 @@ const toMinutes = value => {
 };
 
 function calculateLineHours(line) {
+
   if (!line.isWorkingDay) return 0;
-  const shiftMinutes = toMinutes(line.endTime) - toMinutes(line.startTime);
-  if (shiftMinutes <= 0) throw new AppError('SCH-001', 'End time must be later than start time.', 422);
-  if (line.breakMinutes < 0) throw new AppError('SCH-002', 'Break cannot be negative.', 422);
-  if (line.breakMinutes >= shiftMinutes) throw new AppError('SCH-003', 'Break must be shorter than the shift.', 422);
-  return (shiftMinutes - line.breakMinutes) / 60;
+
+  const shiftMinutes =
+    toMinutes(line.endTime) - toMinutes(line.startTime);
+
+  if (shiftMinutes <= 0) {
+    throw new AppError(
+      'SCH-001',
+      'End time must be later than start time.',
+      422
+    );
+  }
+
+  if (line.breakMinutes < 0) {
+    throw new AppError(
+      'SCH-002',
+      'Break cannot be negative.',
+      422
+    );
+  }
+
+  if (line.breakMinutes >= shiftMinutes) {
+    throw new AppError(
+      'SCH-003',
+      'Break must be shorter than the shift.',
+      422
+    );
+  }
+
+  // Maximum break = 60 minutes
+  if (line.breakMinutes > 60) {
+    throw new AppError(
+      'SCH-007',
+      'Break time cannot exceed 60 minutes.',
+      422
+    );
+  }
+
+  const workingMinutes =
+    shiftMinutes - line.breakMinutes;
+
+  // Minimum actual working time = 4 hours
+  if (workingMinutes < 240) {
+    throw new AppError(
+      'SCH-006',
+      'Working hours excluding break must be at least 4 hours.',
+      422
+    );
+  }
+
+  return workingMinutes / 60;
 }
 
 function calculateWorkingDays(workingDays) {
