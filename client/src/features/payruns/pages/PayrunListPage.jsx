@@ -1,0 +1,19 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { getApiError } from '../../../shared/api/apiError'
+import DataTable from '../../../shared/components/DataTable/DataTable'
+import ErrorBanner from '../../../shared/components/ErrorBanner/ErrorBanner'
+import LoadingState from '../../../shared/components/LoadingState/LoadingState'
+import Pagination from '../../../shared/components/Pagination/Pagination'
+import StatusBadge from '../../../shared/components/StatusBadge/StatusBadge'
+import salaryConfigApi from '../../salaryConfig/api/salaryConfigApi'
+import payrunApi from '../api/payrunApi'
+import { compact, formatDate, PAYRUN_STATUSES, recordId, structureLabel } from '../payrollUiUtils'
+
+export default function PayrunListPage() {
+  const [rows, setRows] = useState([]); const [structures, setStructures] = useState([]); const [meta, setMeta] = useState(null); const [filters, setFilters] = useState({ status: '', salaryStructureId: '', from: '', to: '', page: 1, limit: 10 }); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
+  useEffect(() => { let active = true; Promise.all([payrunApi.list(compact(filters)), salaryConfigApi.listStructures({ page: 1, limit: 100 })]).then(([result, structureResult]) => { if (active) { setRows(result.data); setMeta(result.meta); setStructures(structureResult.data); setError(''); setLoading(false) } }).catch((requestError) => { if (active) { setError(getApiError(requestError).message); setLoading(false) } }); return () => { active = false } }, [filters])
+  const columns = useMemo(() => [{ key: 'name', label: 'Payrun', render: (row) => <Link className="table-link" to={`/payroll/payruns/${row.id}`}>{row.name}</Link> }, { key: 'structure', label: 'Salary Structure', render: (row) => structureLabel(row.salaryStructure, structures) }, { key: 'period', label: 'Period', render: (row) => `${formatDate(row.periodStart)} - ${formatDate(row.periodEnd)}` }, { key: 'employees', label: 'Employees', render: (row) => row.employees?.length || 0 }, { key: 'status', label: 'Status', render: (row) => <StatusBadge value={row.status} /> }, { key: 'warnings', label: 'Issues', render: (row) => row.warnings?.length || 0 }, { key: 'created', label: 'Created', render: (row) => formatDate(row.createdAt) }, { key: 'action', label: '', render: (row) => <Link className="button-link" to={`/payroll/payruns/${row.id}`}>Process</Link> }], [structures])
+  const update = (name, value) => setFilters((current) => ({ ...current, [name]: value, page: 1 }))
+  return <><header className="page-header"><div><p className="eyebrow">Payroll</p><h1>Payruns</h1><p>Create employee-scoped payroll batches and process their controlled lifecycle.</p></div><Link className="button" to="/payroll/payruns/new">+ New Payrun</Link></header><ErrorBanner message={error} /><section className="panel"><div className="operation-filters"><select value={filters.salaryStructureId} onChange={(event) => update('salaryStructureId', event.target.value)}><option value="">All Structures</option>{structures.map((item) => <option key={recordId(item)} value={recordId(item)}>{item.name}</option>)}</select><select value={filters.status} onChange={(event) => update('status', event.target.value)}><option value="">All statuses</option>{PAYRUN_STATUSES.map((status) => <option key={status}>{status}</option>)}</select><input aria-label="Period from" type="date" value={filters.from} onChange={(event) => update('from', event.target.value)} /><input aria-label="Period to" type="date" value={filters.to} onChange={(event) => update('to', event.target.value)} /></div>{loading ? <LoadingState label="Loading Payruns..." /> : <><DataTable columns={columns} rows={rows.map((row) => ({ ...row, id: recordId(row) }))} emptyMessage="No Payruns found." /><Pagination meta={meta} onPageChange={(page) => setFilters({ ...filters, page })} /></>}</section></>
+}

@@ -1,0 +1,6 @@
+export { default as SalaryRuleDetailPage } from './pages/SalaryRuleDetailPage'
+export { default as SalaryRuleFormPage } from './pages/SalaryRuleFormPage'
+export { default as SalaryRuleListPage } from './pages/SalaryRuleListPage'
+export { default as SalaryStructureDetailPage } from './pages/SalaryStructureDetailPage'
+export { default as SalaryStructureFormPage } from './pages/SalaryStructureFormPage'
+export { default as SalaryStructureListPage } from './pages/SalaryStructureListPage'

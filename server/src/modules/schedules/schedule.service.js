@@ -11,6 +11,20 @@ const toMinutes = value => {
   const [hours, minutes] = value.split(':').map(Number);
   return hours * 60 + minutes;
 };
+const DAY_NAMES = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function shiftForDate(schedule, date) {
+  const day = schedule.workingDays.find(line => line.day === DAY_NAMES[date.getUTCDay()]);
+  if (!day?.isWorkingDay) return null;
+  const datePart = date.toISOString().slice(0, 10);
+  return {
+    date: datePart,
+    start: new Date(`${datePart}T${day.startTime}:00.000Z`),
+    end: new Date(`${datePart}T${day.endTime}:00.000Z`),
+    breakMinutes: day.breakMinutes,
+  };
+}
 
 function calculateLineHours(line) {
 
@@ -104,7 +118,25 @@ function createScheduleService({ Model = WorkingSchedule } = {}) {
     try { return await schedule.save(); }
     catch (error) { throw persistenceError(error); }
   }
-  return { listSchedules, createSchedule, getSchedule, updateSchedule, deactivateSchedule };
+  async function getAttendanceContext(scheduleId, at) {
+    const schedule = await getSchedule(scheduleId);
+    const shift = shiftForDate(schedule, new Date(at));
+    if (!shift) throw new AppError('VALIDATION_ERROR', 'No working schedule applies on this date.', 422);
+    return shift;
+  }
+  async function getWorkingIntervals(scheduleId, { startDate, endDate }) {
+    const schedule = await getSchedule(scheduleId);
+    const intervals = [];
+    const first = new Date(`${startDate.toISOString().slice(0, 10)}T00:00:00.000Z`);
+    const last = new Date(`${endDate.toISOString().slice(0, 10)}T00:00:00.000Z`);
+    for (let cursor = first; cursor <= last; cursor = new Date(cursor.getTime() + DAY_MS)) {
+      const shift = shiftForDate(schedule, cursor);
+      if (!shift) continue;
+      intervals.push({ date: shift.date, start: shift.start, end: new Date(shift.end.getTime() - shift.breakMinutes * 60000) });
+    }
+    return intervals;
+  }
+  return { listSchedules, createSchedule, getSchedule, updateSchedule, deactivateSchedule, getAttendanceContext, getWorkingIntervals };
 }
 
 module.exports = { createScheduleService, ...createScheduleService(), calculateLineHours, calculateWorkingDays };
