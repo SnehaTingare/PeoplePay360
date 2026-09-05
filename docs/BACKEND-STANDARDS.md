@@ -455,7 +455,16 @@ Frontend route hiding is UX only, not security.
 - generate temporary password or activation token;
 - store only hash/token;
 - force first-login password change for temporary-password MVP;
-- optional Employee link for Employee accounts.
+- create only internal/admin roles through `POST /users`;
+- reject `EMPLOYEE` because normal Employee accounts are provisioned through `POST /employees`.
+
+### Employee onboarding
+- the Employee service orchestrates onboarding through the exported Users service;
+- provision an `ACTIVE` User with role `EMPLOYEE` and `mustChangePassword = true`;
+- persist only the password hash and return the temporary password once;
+- establish reciprocal one-to-one `Employee.user` / `User.employeeId` links;
+- use a transaction where supported or compensate newly created records on failure;
+- resolve Employee self-service from the authenticated User ID and persisted relationship, not a JWT `employeeId` claim.
 
 ---
 

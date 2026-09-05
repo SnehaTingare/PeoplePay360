@@ -10,7 +10,9 @@ import Pagination from '../../shared/components/Pagination/Pagination'
 import StatusBadge from '../../shared/components/StatusBadge/StatusBadge'
 import TemporaryPasswordDialog from '../../shared/components/TemporaryPasswordDialog/TemporaryPasswordDialog'
 import { ACCOUNT_STATUSES } from '../../shared/constants/statuses'
-import { ROLE_OPTIONS, roleLabel } from '../../shared/constants/roles'
+import { ROLES, ROLE_OPTIONS, roleLabel } from '../../shared/constants/roles'
+
+const INTERNAL_ROLE_OPTIONS = ROLE_OPTIONS.filter((role) => role !== ROLES.EMPLOYEE)
 
 export default function UsersPage() {
   const location = useLocation()
@@ -53,10 +55,14 @@ export default function UsersPage() {
   const columns = useMemo(() => [
     { key: 'name', label: 'Name', render: (user) => <div><Link className="table-link" to={`/users/${user.id}`}>{user.firstName} {user.lastName}</Link><small>{user.uniqueId}</small></div> },
     { key: 'email', label: 'Email' },
-    { key: 'role', label: 'Role', render: (user) => <select className="table-select" value={user.role} aria-label={`Role for ${user.email}`} onChange={(event) => requestAction({ ...user, pendingRole: event.target.value }, 'role')}>{ROLE_OPTIONS.map((role) => <option key={role}>{role}</option>)}</select> },
+    { key: 'role', label: 'Role', render: (user) => user.role === ROLES.EMPLOYEE
+      ? <StatusBadge value={user.role} kind="role" />
+      : <select className="table-select" value={user.role} aria-label={`Role for ${user.email}`} onChange={(event) => requestAction({ ...user, pendingRole: event.target.value }, 'role')}>{INTERNAL_ROLE_OPTIONS.map((role) => <option key={role}>{role}</option>)}</select> },
     { key: 'accountStatus', label: 'Status', render: (user) => <StatusBadge value={user.accountStatus} /> },
     { key: 'mustChangePassword', label: 'Password', render: (user) => user.mustChangePassword ? <span className="badge badge--warning">Change required</span> : <span className="muted">Current</span> },
-    { key: 'actions', label: 'Actions', render: (user) => <div className="row-actions"><Link className="button-link" to={`/users/${user.id}`}>Edit</Link><button className="button-link" onClick={() => requestAction(user, user.accountStatus === ACCOUNT_STATUSES.ACTIVE ? 'deactivate' : 'activate')}>{user.accountStatus === ACCOUNT_STATUSES.ACTIVE ? 'Deactivate' : 'Activate'}</button><button className="button-link" onClick={() => requestAction(user, 'reset')}>Reset password</button></div> },
+    { key: 'actions', label: 'Actions', render: (user) => <div className="row-actions">{user.role === ROLES.EMPLOYEE
+      ? user.employeeId && <Link className="button-link" to={`/employees/${user.employeeId}`}>View employee</Link>
+      : <><Link className="button-link" to={`/users/${user.id}`}>Edit</Link><button className="button-link" onClick={() => requestAction(user, user.accountStatus === ACCOUNT_STATUSES.ACTIVE ? 'deactivate' : 'activate')}>{user.accountStatus === ACCOUNT_STATUSES.ACTIVE ? 'Deactivate' : 'Activate'}</button></>}<button className="button-link" onClick={() => requestAction(user, 'reset')}>Reset password</button></div> },
   ], [])
 
   return <><header className="page-header"><div><p className="eyebrow">Access management</p><h1>Users</h1><p>Manage accounts, roles, access status, and password resets.</p></div><Link className="button" to="/users/new">+ Create user</Link></header>

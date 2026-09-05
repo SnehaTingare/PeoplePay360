@@ -29,5 +29,9 @@ const schema = new mongoose.Schema({
 });
 
 schema.index({ email: 1 }, { unique: true });
+schema.index(
+  { employeeId: 1 },
+  { unique: true, partialFilterExpression: { employeeId: { $type: 'objectId' } } },
+);
 
 module.exports = mongoose.models.User || mongoose.model('User', schema);

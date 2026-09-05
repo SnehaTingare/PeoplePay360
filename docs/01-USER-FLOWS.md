@@ -182,13 +182,20 @@ User has an authenticated session with role-based permissions.
    * employee type,
    * working schedule.
 5. User saves Employee.
-6. System validates required information.
-7. System creates Employee record.
-8. Employee appears in List/Kanban view.
+6. System validates required Employee information and department, working-schedule and manager relationships.
+7. System ensures the Employee email is unique and is not occupied by an incompatible User.
+8. System securely generates a temporary password and provisions an `ACTIVE` User with role `EMPLOYEE` and `mustChangePassword = true`.
+9. System creates the Employee record and establishes the reciprocal `Employee.user` / `User.employeeId` relationship.
+10. System returns the Employee plus the one-time onboarding credential.
+11. Employee appears in List/Kanban view.
+
+#### Error / Rollback Flow
+
+If User provisioning, Employee creation, or reciprocal linkage fails, the system rolls back or compensates records created by this onboarding attempt. It must not leave an orphan User, an orphan Employee, or a half-linked relationship.
 
 #### Postcondition
 
-Employee becomes available for contracts, attendance, time off and payroll-related workflows.
+Employee becomes available for contracts, attendance, time off and payroll-related workflows and can sign in using the one-time temporary credential.
 
 The source identifies Employee as the operational hub and requires list/Kanban/form navigation. 
 

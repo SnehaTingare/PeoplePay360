@@ -5,15 +5,17 @@ const assert = require('node:assert/strict');
 const express = require('express');
 const createStore = require('../../fixtures/configurationStore');
 const Employee = require('../../../src/modules/employees/employee.model');
+const User = require('../../../src/modules/users/user.model');
 const validation = require('../../../src/modules/employees/employee.validation');
 const { createEmployeeService } = require('../../../src/modules/employees/employee.service');
+const userService = require('../../../src/modules/users/user.service');
+const { comparePassword } = require('../../../src/core/security/password');
 const createEmployeeRouter = require('../../../src/modules/employees/employee.routes');
 const errorHandler = require('../../../src/core/middleware/errorHandler');
 const roles = require('../../../src/core/constants/roles');
 
 const departmentId = 'a'.repeat(24);
 const scheduleId = 'b'.repeat(24);
-const userId = 'c'.repeat(24);
 const missingId = 'f'.repeat(24);
 const input = {
   firstName: 'Rahul', lastName: 'Sharma', email: 'rahul@company.com', phone: '9999999999',
@@ -23,10 +25,13 @@ const input = {
 const rejectsCode = (work, code) => assert.rejects(work, error => error.code === code);
 const throwsCode = (work, code) => assert.throws(work, error => error.code === code);
 
-function fixture() {
+function fixture({ failLink = false } = {}) {
   const store = createStore();
   const Model = store.model(['email']);
   Model.findById = employeeId => Model.findOne({ _id: employeeId });
+  const UserModel = store.model(['email']);
+  UserModel.findById = id => UserModel.findOne({ _id: id });
+  UserModel.findByIdAndUpdate = (id, update) => UserModel.findOneAndUpdate({ _id: id }, update);
   const departments = { getDepartment: async id => {
     if (id !== departmentId) throw Object.assign(new Error('missing'), { code: 'RESOURCE_NOT_FOUND' });
     return { id };
@@ -35,8 +40,18 @@ function fixture() {
     if (id !== scheduleId) throw Object.assign(new Error('missing'), { code: 'RESOURCE_NOT_FOUND' });
     return { id };
   } };
-  const users = { findById: async id => id === userId ? { _id: id } : null };
-  return { Model, service: createEmployeeService({ Model, departments, schedules, users }) };
+  const users = {
+    assertEmployeeAccountEmailAvailable: email => userService.assertEmployeeAccountEmailAvailable(email, { Model: UserModel }),
+    provisionEmployeeAccount: input => userService.provisionEmployeeAccount(input, { Model: UserModel }),
+    linkEmployeeAccount: (accountId, employeeId) => {
+      if (failLink) throw new Error('link failed');
+      return userService.linkEmployeeAccount(accountId, employeeId, { Model: UserModel });
+    },
+    assertEmployeeAccountLink: (accountId, employeeId) => userService.assertEmployeeAccountLink(accountId, employeeId, { Model: UserModel }),
+    setLinkedEmployeeAccountStatus: (accountId, employeeId, status) => userService.setLinkedEmployeeAccountStatus(accountId, employeeId, status, { Model: UserModel }),
+    removeProvisionedEmployeeAccount: accountId => userService.removeProvisionedEmployeeAccount(accountId, { Model: UserModel }),
+  };
+  return { Model, UserModel, users, service: createEmployeeService({ Model, departments, schedules, users }) };
 }
 
 test('Employee schema declares unique identifiers and relationships', () => {
@@ -46,19 +61,104 @@ test('Employee schema declares unique identifiers and relationships', () => {
   assert.equal(Employee.schema.path('user').options.ref, 'User');
   assert.ok(Employee.schema.indexes().some(([keys, options]) => keys.employeeId === 1 && options.unique));
   assert.ok(Employee.schema.indexes().some(([keys, options]) => keys.email === 1 && options.unique));
+  assert.ok(Employee.schema.indexes().some(([keys, options]) => keys.user === 1 && options.unique));
+  assert.ok(User.schema.indexes().some(([keys, options]) => keys.employeeId === 1 && options.unique));
 });
 
 test('Employee creates with generated ID, normalized data, and valid relationships', async () => {
-  const { service } = fixture();
-  const employee = await service.createEmployee({ ...input, userId, bankDetails: {
+  const { service, UserModel } = fixture();
+  const result = await service.createEmployee({ ...input, bankDetails: {
     accountHolderName: 'Rahul Sharma', accountNumber: '1234', bankName: 'Example Bank', ifscCode: 'exam0001',
   } });
+  const { employee, accountProvisioning } = result;
+  const user = await UserModel.findById(employee.user);
   assert.match(employee.employeeId, /^PP360-E-[A-F0-9]{8}$/);
   assert.equal(employee.email, input.email);
-  assert.equal(employee.user, userId);
+  assert.equal(String(user._id), String(employee.user));
+  assert.equal(String(user.employeeId), String(employee._id));
+  assert.equal(user.role, roles.EMPLOYEE);
+  assert.equal(user.accountStatus, 'ACTIVE');
+  assert.equal(user.mustChangePassword, true);
+  assert.notEqual(user.passwordHash, accountProvisioning.temporaryPassword);
+  assert.equal(await comparePassword(accountProvisioning.temporaryPassword, user.passwordHash), true);
+  assert.equal(accountProvisioning.userId, String(user._id));
+  assert.equal(accountProvisioning.email, input.email);
+  assert.ok(accountProvisioning.temporaryPassword);
+  assert.equal(accountProvisioning.mustChangePassword, true);
   assert.equal(employee.department, departmentId);
   assert.equal(employee.workingSchedule, scheduleId);
   assert.equal(employee.employmentStatus, 'ACTIVE');
+  assert.equal('temporaryPassword' in employee, false);
+  assert.equal('passwordHash' in userService.serializeUser(user), false);
+  const laterRead = await service.getEmployee(employee._id);
+  assert.equal('temporaryPassword' in laterRead, false);
+  assert.equal('accountProvisioning' in laterRead, false);
+});
+
+test('standalone User creation rejects EMPLOYEE and manual linkage fields', async () => {
+  throwsCode(() => validation.validateCreate({ body: { ...input, userId: missingId } }), 'VALIDATION_ERROR');
+  const userValidation = require('../../../src/modules/users/user.validation');
+  throwsCode(() => userValidation.validateCreateUser({ body: {
+    firstName: 'Rahul', lastName: 'Sharma', email: input.email, role: roles.EMPLOYEE,
+  } }), 'USR-006');
+  await rejectsCode(() => userService.createUser({
+    firstName: 'Rahul', lastName: 'Sharma', email: input.email, role: roles.EMPLOYEE,
+  }), 'USR-006');
+});
+
+test('User linkage rejects internal roles and duplicate Employee links', async () => {
+  const { service, UserModel, users } = fixture();
+  const { employee } = await service.createEmployee(input);
+  const internal = await UserModel.create({
+    _id: 'c'.repeat(24), uniqueId: 'PP360-U-INTERNAL', firstName: 'Internal', lastName: 'User',
+    email: 'internal@company.com', passwordHash: 'hash', role: roles.ADMIN,
+    accountStatus: 'ACTIVE', employeeId: null, mustChangePassword: true,
+  });
+  await rejectsCode(() => users.linkEmployeeAccount(internal._id, employee._id), 'USR-002');
+  const second = await users.provisionEmployeeAccount({
+    firstName: 'Second', lastName: 'Employee', email: 'second@company.com',
+  });
+  await rejectsCode(() => users.linkEmployeeAccount(second.user._id, employee._id), 'RESOURCE_CONFLICT');
+});
+
+test('failed reciprocal linkage compensates both newly created records', async () => {
+  const { service, Model, UserModel } = fixture({ failLink: true });
+  await assert.rejects(() => service.createEmployee(input), /link failed/);
+  assert.equal(Model.rows.size, 0);
+  assert.equal(UserModel.rows.size, 0);
+});
+
+test('Employee onboarding rejects an email already occupied by a User', async () => {
+  const { service, Model, UserModel } = fixture();
+  await UserModel.create({
+    _id: 'e'.repeat(24), uniqueId: 'PP360-U-EXISTING', firstName: 'Existing', lastName: 'User',
+    email: input.email, passwordHash: 'hash', role: roles.HR_MANAGER,
+    accountStatus: 'ACTIVE', employeeId: null, mustChangePassword: true,
+  });
+  await rejectsCode(() => service.createEmployee(input), 'USR-001');
+  assert.equal(Model.rows.size, 0);
+  assert.equal(UserModel.rows.size, 1);
+});
+
+test('Employee deactivation synchronizes its linked EMPLOYEE User', async () => {
+  const { service, UserModel } = fixture();
+  const { employee } = await service.createEmployee(input);
+  await service.deactivateEmployee(employee._id);
+  assert.equal((await service.getEmployee(employee._id)).employmentStatus, 'INACTIVE');
+  assert.equal((await UserModel.findById(employee.user)).accountStatus, 'INACTIVE');
+  await service.activateEmployee(employee._id);
+  assert.equal((await service.getEmployee(employee._id)).employmentStatus, 'ACTIVE');
+  assert.equal((await UserModel.findById(employee.user)).accountStatus, 'ACTIVE');
+});
+
+test('password change clears mustChangePassword for a provisioned account', async () => {
+  const { UserModel, users } = fixture();
+  const account = await users.provisionEmployeeAccount({
+    firstName: 'Password', lastName: 'Change', email: 'password@company.com',
+  });
+  const updated = await userService.replaceOwnPassword(account.user._id, 'new-hash', { Model: UserModel });
+  assert.equal(updated.mustChangePassword, false);
+  assert.equal(updated.passwordHash, 'new-hash');
 });
 
 test('Employee rejects duplicate email and missing department/position', async () => {
@@ -69,26 +169,24 @@ test('Employee rejects duplicate email and missing department/position', async (
   throwsCode(() => validation.validateCreate({ body: { ...input, jobPosition: '' } }), 'EMP-003');
 });
 
-test('Employee validates Department, Schedule, User, Manager, and unique User linkage', async () => {
+test('Employee validates Department, Schedule, and Manager relationships and rejects arbitrary User linkage', async () => {
   const { service } = fixture();
   await rejectsCode(() => service.createEmployee({ ...input, departmentId: missingId }), 'RESOURCE_NOT_FOUND');
   await rejectsCode(() => service.createEmployee({ ...input, workingScheduleId: missingId }), 'RESOURCE_NOT_FOUND');
-  await rejectsCode(() => service.createEmployee({ ...input, userId: missingId }), 'RESOURCE_NOT_FOUND');
   await rejectsCode(() => service.createEmployee({ ...input, managerId: missingId }), 'RESOURCE_NOT_FOUND');
-  await service.createEmployee({ ...input, userId });
-  await rejectsCode(() => service.createEmployee({ ...input, email: 'other@company.com', userId }), 'RESOURCE_CONFLICT');
+  throwsCode(() => validation.validateCreate({ body: { ...input, userId: missingId } }), 'VALIDATION_ERROR');
 });
 
 test('Employee cannot become their own manager', async () => {
   const { service } = fixture();
-  const employee = await service.createEmployee(input);
+  const { employee } = await service.createEmployee(input);
   await rejectsCode(() => service.updateEmployee(employee._id, { managerId: employee._id }), 'EMP-002');
 });
 
 test('Employee list/search/filter, update, and lifecycle preserve records', async () => {
   const { service, Model } = fixture();
-  const manager = await service.createEmployee(input);
-  const report = await service.createEmployee({ ...input, email: 'anita@company.com', firstName: 'Anita', employeeType: 'PART_TIME', managerId: manager._id });
+  const { employee: manager } = await service.createEmployee(input);
+  const { employee: report } = await service.createEmployee({ ...input, email: 'anita@company.com', firstName: 'Anita', employeeType: 'PART_TIME', managerId: manager._id });
   const updated = await service.updateEmployee(report._id, { phone: '8888888888', jobPosition: 'Senior Engineer' });
   assert.equal(updated.phone, '8888888888');
   assert.equal((await service.listEmployees({ q: 'anita', page: 1, limit: 20 })).meta.total, 1);
@@ -99,10 +197,10 @@ test('Employee list/search/filter, update, and lifecycle preserve records', asyn
   assert.equal((await service.activateEmployee(report._id)).employmentStatus, 'ACTIVE');
 });
 
-test('Employee /me derives linkage and ownership violations use EMP-005', async () => {
+test('Employee /me derives linkage from authenticated User ID without a JWT employeeId claim', async () => {
   const { service } = fixture();
-  const own = await service.createEmployee(input);
-  const actor = { employeeId: own._id };
+  const { employee: own, accountProvisioning } = await service.createEmployee(input);
+  const actor = { id: accountProvisioning.userId };
   assert.equal((await service.getOwnEmployee(actor))._id, own._id);
   assert.equal((await service.assertOwnership(own._id, actor))._id, own._id);
   await rejectsCode(() => service.assertOwnership(missingId, actor), 'EMP-005');
@@ -120,7 +218,7 @@ async function httpFixture(t) {
     };
   } });
   const authenticate = (req, res, next) => {
-    req.user = { role: req.headers['x-test-role'], status: 'ACTIVE', employeeId: missingId };
+    req.user = { id: missingId, role: req.headers['x-test-role'], status: 'ACTIVE' };
     next();
   };
   const app = express();

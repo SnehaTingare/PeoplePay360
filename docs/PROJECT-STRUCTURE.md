@@ -244,10 +244,10 @@ peoplepay360/
 Owns login/session/password-change flows. It may read User through the Users service; it does not own Employee data.
 
 ### `users`
-Owns User accounts, role assignment, activation state, bootstrap Admin, and Employee-account linkage.
+Owns User accounts, password handling, role assignment, activation state, bootstrap Admin, and the User side of Employee-account linkage.
 
 ### `employees`
-Owns Employee master data. It must not calculate payroll.
+Owns Employee master data and orchestrates normal Employee onboarding through the exported Users service. It must not manipulate the User model directly or calculate payroll.
 
 ### `schedules`
 Owns reusable weekly work patterns and weekly-hour calculation.
@@ -282,7 +282,7 @@ Owns read-only aggregations for the live Dashboard. It does not own source-of-tr
 
 ```text
 auth → users
-users → employees (link/ownership lookup only)
+employees → users (Employee account provisioning/link synchronization only)
 contracts → employees, schedules, salaryConfig
 attendance → employees, schedules
 

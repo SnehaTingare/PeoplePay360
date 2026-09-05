@@ -43,8 +43,10 @@ async function findByIdOrThrow(id) {
   return user;
 }
 
-const createUniqueId = id => `PP360-U-${id.toHexString().slice(-8).toUpperCase()}`;
+const createUniqueId = id => `PP360-U-${String(id).slice(-8).toUpperCase()}`;
 const duplicateEmail = error => error && error.code === 11000 && error.keyPattern && error.keyPattern.email;
+const duplicateEmployeeLink = error => error && error.code === 11000 && error.keyPattern && error.keyPattern.employeeId;
+const inSession = (query, session) => (session && typeof query.session === 'function' ? query.session(session) : query);
 const findByEmailWithPassword = email => User.findOne({ email: normalizeEmail(email) }).select('+passwordHash');
 const findById = id => (mongoose.isObjectIdOrHexString(id) ? User.findById(id) : null);
 const findByIdWithPassword = id => (
@@ -62,7 +64,7 @@ const createBootstrapAdmin = ({ firstName, lastName, email, passwordHash }) => U
 );
 
 const updateLastLogin = (id, date = new Date()) => User.findByIdAndUpdate(id, { $set: { lastLogin: date } }, { new: true });
-const replaceOwnPassword = (id, passwordHash) => User.findByIdAndUpdate(
+const replaceOwnPassword = (id, passwordHash, { Model = User } = {}) => Model.findByIdAndUpdate(
   id,
   { $set: { passwordHash, mustChangePassword: false } },
   { new: true, runValidators: true },
@@ -82,24 +84,112 @@ async function listUsers({ role, accountStatus, q, page, limit }) {
 
 const getUser = async id => serializeUser(await findByIdOrThrow(id));
 
-async function createUser({ firstName, lastName, email, role, employeeId = null }) {
+async function createUser({ firstName, lastName, email, role }) {
   if (!isCanonicalRole(role)) throw appError(errors.USER_INVALID_ROLE);
+  if (role === roles.EMPLOYEE) throw appError(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING);
   const normalizedEmail = normalizeEmail(email);
   if (await User.exists({ email: normalizedEmail })) throw appError(errors.USER_DUPLICATE_EMAIL);
 
   const temporaryPassword = generateTemporaryPassword();
   const passwordHash = await hashPassword(temporaryPassword);
-  const _id = new mongoose.Types.ObjectId();
+  const _id = new mongoose.Types.ObjectId().toHexString();
   try {
     const user = await User.create({
       _id, uniqueId: createUniqueId(_id), firstName, lastName, email: normalizedEmail, passwordHash,
-      role, accountStatus: ACCOUNT_STATUSES.ACTIVE, employeeId, mustChangePassword: true,
+      role, accountStatus: ACCOUNT_STATUSES.ACTIVE, employeeId: null, mustChangePassword: true,
     });
     return { user: serializeUser(user), temporaryPassword };
   } catch (error) {
     if (duplicateEmail(error)) throw appError(errors.USER_DUPLICATE_EMAIL);
     throw error;
   }
+}
+
+async function assertEmployeeAccountEmailAvailable(email, { Model = User, session = null } = {}) {
+  if (await inSession(Model.exists({ email: normalizeEmail(email) }), session)) {
+    throw appError(errors.USER_DUPLICATE_EMAIL);
+  }
+}
+
+async function provisionEmployeeAccount(
+  { firstName, lastName, email },
+  { Model = User, generatePassword = generateTemporaryPassword, hash = hashPassword, session = null } = {},
+) {
+  const normalizedEmail = normalizeEmail(email);
+  await assertEmployeeAccountEmailAvailable(normalizedEmail, { Model, session });
+  const temporaryPassword = generatePassword();
+  const passwordHash = await hash(temporaryPassword);
+  const _id = new mongoose.Types.ObjectId().toHexString();
+  try {
+    const data = {
+      _id,
+      uniqueId: createUniqueId(_id),
+      firstName,
+      lastName,
+      email: normalizedEmail,
+      passwordHash,
+      role: roles.EMPLOYEE,
+      accountStatus: ACCOUNT_STATUSES.ACTIVE,
+      employeeId: null,
+      mustChangePassword: true,
+    };
+    const user = session ? (await Model.create([data], { session }))[0] : await Model.create(data);
+    return { user, temporaryPassword };
+  } catch (error) {
+    if (duplicateEmail(error)) throw appError(errors.USER_DUPLICATE_EMAIL);
+    throw error;
+  }
+}
+
+async function assertEmployeeAccountLink(userId, employeeId, { Model = User, session = null } = {}) {
+  const user = await inSession(Model.findById(userId), session);
+  if (!user) throw appError(errors.RESOURCE_NOT_FOUND, { message: 'Linked User not found.' });
+  if (user.role !== roles.EMPLOYEE) {
+    throw appError(errors.USER_INVALID_ROLE, {
+      message: 'An Employee can only be linked to a User with role EMPLOYEE.', statusCode: 422,
+    });
+  }
+  if (!user.employeeId || String(user.employeeId) !== String(employeeId)) {
+    throw new AppError('RESOURCE_CONFLICT', 'User and Employee links are not reciprocal.', 409);
+  }
+  return user;
+}
+
+async function linkEmployeeAccount(userId, employeeId, { Model = User, session = null } = {}) {
+  const user = await inSession(Model.findById(userId), session);
+  if (!user) throw appError(errors.RESOURCE_NOT_FOUND, { message: 'Provisioned User not found.' });
+  if (user.role !== roles.EMPLOYEE) {
+    throw appError(errors.USER_INVALID_ROLE, {
+      message: 'An Employee can only be linked to a User with role EMPLOYEE.', statusCode: 422,
+    });
+  }
+  if (user.employeeId && String(user.employeeId) !== String(employeeId)) {
+    throw new AppError('RESOURCE_CONFLICT', 'User is already linked to another Employee.', 409);
+  }
+  if (await inSession(Model.exists({ employeeId, _id: { $ne: user._id } }), session)) {
+    throw new AppError('RESOURCE_CONFLICT', 'Employee is already linked to another User.', 409);
+  }
+  user.employeeId = employeeId;
+  try {
+    await user.save(session ? { session } : undefined);
+  } catch (error) {
+    if (duplicateEmployeeLink(error)) {
+      throw new AppError('RESOURCE_CONFLICT', 'Employee is already linked to another User.', 409);
+    }
+    throw error;
+  }
+  return user;
+}
+
+async function setLinkedEmployeeAccountStatus(userId, employeeId, accountStatus, { Model = User } = {}) {
+  const user = await assertEmployeeAccountLink(userId, employeeId, { Model });
+  user.accountStatus = accountStatus;
+  await user.save();
+  return serializeUser(user);
+}
+
+async function removeProvisionedEmployeeAccount(userId, { Model = User } = {}) {
+  await Model.deleteOne({ _id: userId, role: roles.EMPLOYEE });
 }
 
 async function updateUser(id, changes) {
@@ -109,7 +199,7 @@ async function updateUser(id, changes) {
     if (await User.exists({ email, _id: { $ne: user._id } })) throw appError(errors.USER_DUPLICATE_EMAIL);
     user.email = email;
   }
-  for (const field of ['firstName', 'lastName', 'employeeId']) {
+  for (const field of ['firstName', 'lastName']) {
     if (changes[field] !== undefined) user[field] = changes[field];
   }
   try {
@@ -123,7 +213,9 @@ async function updateUser(id, changes) {
 
 async function changeRole(id, role) {
   if (!isCanonicalRole(role)) throw appError(errors.USER_INVALID_ROLE);
+  if (role === roles.EMPLOYEE) throw appError(errors.USER_EMPLOYEE_REQUIRES_ONBOARDING);
   const user = await findByIdOrThrow(id);
+  if (user.employeeId) throw new AppError('RESOURCE_CONFLICT', 'Linked Employee accounts must retain role EMPLOYEE.', 409);
   user.role = role;
   await user.save();
   return serializeUser(user);
@@ -146,7 +238,9 @@ async function resetPassword(id) {
 }
 
 module.exports = {
-  changeRole, createBootstrapAdmin, createUser, findAdmin, findByEmailWithPassword, findById,
-  findByIdWithPassword, getUser, listUsers, normalizeEmail, replaceOwnPassword, resetPassword,
-  serializeUser, setAccountStatus, updateLastLogin, updateUser,
+  assertEmployeeAccountEmailAvailable, assertEmployeeAccountLink, changeRole, createBootstrapAdmin,
+  createUser, findAdmin, findByEmailWithPassword, findById, findByIdWithPassword, getUser,
+  linkEmployeeAccount, listUsers, normalizeEmail, provisionEmployeeAccount, removeProvisionedEmployeeAccount,
+  replaceOwnPassword, resetPassword, serializeUser, setAccountStatus, setLinkedEmployeeAccountStatus,
+  updateLastLogin, updateUser,
 };

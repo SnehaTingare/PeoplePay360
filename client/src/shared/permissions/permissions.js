@@ -10,3 +10,7 @@ export const HR_CONFIGURATION_ROLES = [
 ]
 
 export const canManageHrConfiguration = (user) => HR_CONFIGURATION_ROLES.includes(user?.role)
+
+export const EMPLOYEE_MANAGEMENT_ROLES = HR_CONFIGURATION_ROLES
+
+export const canManageEmployees = (user) => EMPLOYEE_MANAGEMENT_ROLES.includes(user?.role)

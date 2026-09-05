@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const AppError = require('../../core/errors/AppError');
 
 const CREATE_FIELDS = [
-  'userId', 'firstName', 'lastName', 'email', 'phone', 'departmentId', 'jobPosition',
+  'firstName', 'lastName', 'email', 'phone', 'departmentId', 'jobPosition',
   'managerId', 'employeeType', 'workingScheduleId', 'joiningDate', 'bankDetails',
 ];
 const fail = (code, field, message) => {
@@ -96,7 +96,7 @@ function values(body, partial) {
   if (!partial || body.employeeType !== undefined) result.employeeType = employeeType(body.employeeType);
   if (!partial || body.workingScheduleId !== undefined) result.workingScheduleId = reference(body.workingScheduleId, 'workingScheduleId');
   if (!partial || body.joiningDate !== undefined) result.joiningDate = dateOnly(body.joiningDate);
-  for (const field of ['userId', 'managerId']) if (body[field] !== undefined) result[field] = reference(body[field], field, true);
+  if (body.managerId !== undefined) result.managerId = reference(body.managerId, 'managerId', true);
   if (body.bankDetails !== undefined) result.bankDetails = bankDetails(body.bankDetails);
   return result;
 }
