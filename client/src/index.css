@@ -342,6 +342,84 @@ input:focus, select:focus, textarea:focus { border-color: var(--violet); box-sha
 .sidebar nav a:hover { background: rgba(255,255,255,.08); transform: translateX(2px); }
 .sidebar nav a.active { color: #fff; background: linear-gradient(90deg, rgba(137,119,242,.38), rgba(137,119,242,.12)); }
 .sidebar nav a.active::before { opacity: 1; }
+
+/* Dropdown parent button */
+.sidebar nav .nav-group-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  width: 100%;
+  min-height: 44px;
+  padding: .72rem .8rem;
+
+  color: #bbb7d9;
+  font-size: .87rem;
+  text-align: left;
+
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+
+  transition: background .16s ease, color .16s ease, transform .16s ease;
+}
+
+.sidebar nav .nav-group-button:hover {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.sidebar nav .nav-group-button.active {
+  color: #fff;
+  background: linear-gradient(
+    90deg,
+    rgba(137,119,242,.38),
+    rgba(137,119,242,.12)
+  );
+}
+
+.sidebar nav .nav-group-button::before {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  width: 3px;
+  height: 22px;
+  border-radius: 0 4px 4px 0;
+  background: #a598ff;
+  opacity: 0;
+}
+
+.sidebar nav .nav-group-button.active::before {
+  opacity: 1;
+}
+
+/* Dropdown children */
+.nav-submenu {
+  display: grid;
+  gap: .18rem;
+  margin: .2rem 0 .35rem;
+  padding-left: 1rem;
+}
+
+/* Smaller child navigation links */
+.sidebar nav a.nav-submenu-link {
+  min-height: 38px;
+  padding: .55rem .75rem;
+  font-size: .82rem;
+}
+
+/* Dropdown arrow */
+.nav-arrow {
+  margin-left: auto;
+  font-size: .85rem;
+  transition: transform .2s ease;
+}
+
+.nav-arrow--open {
+  transform: rotate(180deg);
+}
 .sidebar-footer { gap: .65rem; padding: 1rem .55rem .35rem; }
 .sidebar-profile { display: flex; align-items: center; gap: .65rem; width: 100%; padding: .58rem; border: 0; border-radius: 11px; color: #fff; text-align: left; background: rgba(255,255,255,.06); cursor: pointer; }
 .sidebar-profile > span:last-child, .topbar-user > span:last-child { min-width: 0; display: grid; gap: .1rem; }
@@ -352,7 +430,23 @@ input:focus, select:focus, textarea:focus { border-color: var(--violet); box-sha
 .app-main { margin-left: 270px; transition: margin-left .22s ease; }
 .app-shell--collapsed .sidebar { width: 78px; }
 .app-shell--collapsed .app-main { margin-left: 78px; }
-.app-shell--collapsed .brand-copy, .app-shell--collapsed .sidebar-label, .app-shell--collapsed .sidebar nav a span, .app-shell--collapsed .sidebar-profile > span:last-child, .app-shell--collapsed .signout-button span, .app-shell--collapsed .sidebar-collapse { display: none; }
+.app-shell--collapsed .brand-copy, .app-shell--collapsed .sidebar-label { display: none; }
+/* Hide dropdown text when sidebar is collapsed */
+.app-shell--collapsed .sidebar nav .nav-group-button span:not(.nav-arrow) {
+  display: none;
+}
+
+.app-shell--collapsed .sidebar nav .nav-group-button {
+  justify-content: center;
+}
+
+.app-shell--collapsed .nav-arrow {
+  display: none;
+}
+
+.app-shell--collapsed .nav-submenu {
+  display: none;
+} .app-shell--collapsed .sidebar nav a span, .app-shell--collapsed .sidebar-profile > span:last-child, .app-shell--collapsed .signout-button span, .app-shell--collapsed .sidebar-collapse { display: none; }
 .app-shell--collapsed .sidebar .brand { justify-content: center; padding-inline: 0; }
 .app-shell--collapsed .sidebar nav a, .app-shell--collapsed .sidebar-profile, .app-shell--collapsed .signout-button { justify-content: center; }
 .topbar { height: 76px; padding: 0 clamp(1.25rem, 4vw, 2.7rem); border: 0; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.86); backdrop-filter: blur(14px); }
