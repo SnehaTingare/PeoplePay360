@@ -9,8 +9,15 @@ async function startServer() {
   assertRuntimeEnvironment();
   await connectDatabase();
   await bootstrapAdmin.provision();
-  return app.listen(env.port, () => {
-    console.info(`PeoplePay360 API listening on port ${env.port}.`);
+  return new Promise((resolve, reject) => {
+    const server = app.listen(env.port, error => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      console.info(`PeoplePay360 API listening on port ${env.port}.`);
+      resolve(server);
+    });
   });
 }
 
