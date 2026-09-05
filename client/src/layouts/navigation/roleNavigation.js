@@ -2,6 +2,7 @@ import { ROLES } from '../../shared/constants/roles'
 import { canManageHrConfiguration } from '../../shared/permissions/permissions'
 
 export const navigationFor = (user) => [
+  { label: 'Overview', to: '/', icon: 'dashboard' },
   ...(user?.role === ROLES.ADMIN ? [{ label: 'Users', to: '/users', icon: 'users' }] : []),
   ...(canManageHrConfiguration(user) ? [
     { label: 'Departments', to: '/departments', icon: 'departments' },
