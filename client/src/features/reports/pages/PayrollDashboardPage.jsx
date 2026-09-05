@@ -1,0 +1,31 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { getApiError } from '../../../shared/api/apiError'
+import ErrorBanner from '../../../shared/components/ErrorBanner/ErrorBanner'
+import LoadingState from '../../../shared/components/LoadingState/LoadingState'
+import departmentsApi from '../../departments/api/departmentsApi'
+import { compact, formatMoney } from '../../payruns/payrollUiUtils'
+import reportsApi from '../api/reportsApi'
+
+const colors = ['#3157d5', '#5578e3', '#7f98e8', '#9aade9', '#b8c5ee']
+function Kpi({ label, value, note }) { return <article className="kpi-card"><small>{label}</small><strong>{value}</strong>{note && <span>{note}</span>}</article> }
+function Bars({ rows, label, value, format = (item) => item }) {
+  const maximum = Math.max(0, ...rows.map(value))
+  return rows.length ? <div className="bar-chart">{rows.map((row, index) => <div className="bar-row" key={`${label(row)}-${index}`}><div><span>{label(row)}</span><strong>{format(value(row))}</strong></div><div className="bar-track"><span style={{ width: `${maximum ? value(row) * 100 / maximum : 0}%`, background: colors[index % colors.length] }} /></div></div>)}</div> : <div className="empty-cell">No report data for this scope.</div>
+}
+function CountGrid({ values }) { return <div className="count-grid">{Object.entries(values).map(([label, value]) => <div key={label}><small>{label.replace(/([A-Z])/g, ' $1')}</small><strong>{value}</strong></div>)}</div> }
+
+export default function PayrollDashboardPage() {
+  const [departments, setDepartments] = useState([]); const [filters, setFilters] = useState({ from: '', to: '', departmentId: '', employeeType: '' }); const [applied, setApplied] = useState(filters); const [dashboard, setDashboard] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState('')
+  useEffect(() => { departmentsApi.list({ page: 1, limit: 100 }).then((result) => setDepartments(result.data)).catch(() => {}) }, [])
+  useEffect(() => { let active = true; reportsApi.payrollDashboard(compact(applied)).then((result) => { if (active) { setDashboard(result); setError(''); setLoading(false) } }).catch((requestError) => { if (active) { setError(getApiError(requestError).message); setLoading(false) } }); return () => { active = false } }, [applied])
+  const apply = (event) => { event.preventDefault(); setLoading(true); setApplied({ ...filters }) }
+  if (loading && !dashboard) return <LoadingState label="Loading Payroll Dashboard..." />
+  const attention = dashboard?.attention || {}
+  const attentionRows = [...(attention.payrollBlockingWarnings || []), ...(attention.payrollWarnings || [])]
+  return <><header className="page-header"><div><p className="eyebrow">Live reports</p><h1>Payroll Dashboard</h1><p>Every value is aggregated from persisted payroll, attendance, leave, Employee, and Contract records.</p></div></header><ErrorBanner message={error} /><form className="panel dashboard-filters" onSubmit={apply}><input aria-label="Report from" type="date" value={filters.from} onChange={(event) => setFilters({ ...filters, from: event.target.value })} /><input aria-label="Report to" type="date" value={filters.to} onChange={(event) => setFilters({ ...filters, to: event.target.value })} /><select value={filters.departmentId} onChange={(event) => setFilters({ ...filters, departmentId: event.target.value })}><option value="">All departments</option>{departments.map((department) => <option key={department.id || department._id} value={department.id || department._id}>{department.name}</option>)}</select><input placeholder="Employee type" value={filters.employeeType} onChange={(event) => setFilters({ ...filters, employeeType: event.target.value })} /><button className="button" disabled={loading}>{loading ? 'Refreshing...' : 'Apply filters'}</button></form>
+    {dashboard && <><section className="kpi-grid"><Kpi label="Total Net Salary Paid" value={formatMoney(dashboard.kpis.totalNetSalaryPaid)} /><Kpi label="Payslips Generated" value={dashboard.kpis.payslipsGenerated} /><Kpi label="Average Salary" value={formatMoney(dashboard.kpis.averageSalary)} /><Kpi label="Approved Time Off" value={dashboard.kpis.approvedTimeOff} note={`${dashboard.timeOffOverview.approvedDays} approved units`} /><Kpi label="Attendance Health" value={`${dashboard.kpis.attendanceHealth}%`} /></section>
+      <div className="dashboard-grid"><section className="panel chart-panel"><h2>Salary Cost by Department</h2><Bars rows={dashboard.salaryByDepartment} label={(row) => row.departmentName} value={(row) => row.totalNetSalary} format={formatMoney} /></section><section className="panel chart-panel"><h2>Monthly Net Salary Trend</h2><Bars rows={dashboard.monthlyNetSalaryTrend} label={(row) => row.month} value={(row) => row.totalNetSalary} format={formatMoney} /></section><section className="panel chart-panel"><h2>Payroll Status</h2><CountGrid values={dashboard.payrollStatus} /></section><section className="panel chart-panel"><h2>Attendance Overview</h2><CountGrid values={dashboard.attendanceOverview} /></section><section className="panel chart-panel"><h2>Time Off Overview</h2><CountGrid values={dashboard.timeOffOverview} /></section><section className="panel chart-panel"><h2>Attention Overview</h2><CountGrid values={{ blockingPayroll: attention.payrollBlockingWarnings?.length || 0, payrollWarnings: attention.payrollWarnings?.length || 0, contractAttention: attention.contractAttention?.length || 0, attendanceExceptions: attention.attendanceExceptions?.length || 0 }} /></section></div>
+      <section className="panel dashboard-attention"><div className="section-toolbar"><div><h2>Payroll warnings and attention items</h2><p>Persisted Payrun issues; no client-side warning rules are applied.</p></div></div>{attentionRows.length ? <div className="issue-list">{attentionRows.map((issue, index) => <article className={`issue-row issue-row--${issue.severity === 'BLOCKING' ? 'blocking' : 'warning'}`} key={`${issue.payrunId}-${issue.code}-${index}`}><Link className="table-link" to={`/payroll/payruns/${issue.payrunId}`}>Open Payrun</Link><span className="code-text">{issue.code}</span><p>{issue.message}</p></article>)}</div> : <div className="empty-cell">No payroll warnings for this scope.</div>}</section></>}
+  </>
+}

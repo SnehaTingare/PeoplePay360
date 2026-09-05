@@ -66,7 +66,9 @@ function createDepartmentService({ Model = Department } = {}) {
     }
   }
 
-  return { listDepartments, createDepartment, getDepartment, updateDepartment, deactivateDepartment };
+  const findByIds = ids => Model.find({ _id: { $in: ids } });
+
+  return { listDepartments, createDepartment, getDepartment, updateDepartment, deactivateDepartment, findByIds };
 }
 
 module.exports = { createDepartmentService, ...createDepartmentService() };
