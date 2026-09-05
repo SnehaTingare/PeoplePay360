@@ -14,7 +14,7 @@ const id = 'a'.repeat(24);
 const weekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
 const line = day => ({ day, isWorkingDay: true, startTime: '09:00', endTime: '18:00', breakMinutes: 60 });
 const schedule = { name: 'Standard 40 Hours', workingDays: weekdays.map(line) };
-const throwsCode = (work, code) => assert.throws(work, error => error.code === code);
+const throwsCode = (work, code) => assert.throws(work, { code });
 const rejectsCode = (work, code) => assert.rejects(work, error => error.code === code);
 
 test('Working Schedule calculates 8 daily hours and 40 weekly hours', () => {
@@ -24,12 +24,14 @@ test('Working Schedule calculates 8 daily hours and 40 weekly hours', () => {
   assert.ok(calculated.workingDays.every(day => day.dailyHours === 8));
 });
 
-test('Working Schedule rejects invalid time and break ranges', () => {
-  throwsCode(() => calculateLineHours({ ...line('MONDAY'), startTime: '18:00', endTime: '09:00' }), 'SCH-001');
-  throwsCode(() => calculateLineHours({ ...line('MONDAY'), endTime: '09:00' }), 'SCH-001');
-  throwsCode(() => calculateLineHours({ ...line('MONDAY'), breakMinutes: -1 }), 'SCH-002');
-  throwsCode(() => calculateLineHours({ ...line('MONDAY'), startTime: '09:00', endTime: '12:00', breakMinutes: 180 }), 'SCH-003');
-  throwsCode(() => calculateLineHours({ ...line('MONDAY'), startTime: '09:00', endTime: '12:00', breakMinutes: 240 }), 'SCH-003');
+test('Working Schedule rejects invalid time and break ranges', () => { 
+  throwsCode(() => calculateLineHours({ ...line('MONDAY'), startTime: '18:00', endTime: '09:00' }), 'SCH-001'); 
+  throwsCode(() => calculateLineHours({ ...line('MONDAY'), endTime: '09:00' }), 'SCH-001'); 
+  throwsCode(() => calculateLineHours({ ...line('MONDAY'), breakMinutes: -1 }), 'SCH-002'); 
+  throwsCode(() => calculateLineHours({ ...line('MONDAY'), breakMinutes: 61 }), 'SCH-007'); 
+  throwsCode(() => calculateLineHours({ ...line('MONDAY'), startTime: '09:00', endTime: '12:00', breakMinutes: 180 }), 'SCH-003'); 
+  throwsCode(() => calculateLineHours({ ...line('MONDAY'), startTime: '09:00', endTime: '12:00', breakMinutes: 240 }), 'SCH-003'); 
+  throwsCode(() => calculateLineHours({ ...line('MONDAY'), startTime: '09:00', endTime: '13:00', breakMinutes: 1 }), 'SCH-006'); 
 });
 
 test('Working Schedule rejects duplicate and ambiguous lines', () => {

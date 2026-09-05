@@ -101,6 +101,20 @@ function createAttendanceService({ Model = Attendance, employees, schedules, now
     return Model.updateMany({ status: 'OPEN', checkOut: null, checkIn: { $lt: before } },
       { $set: { status: 'MISSING_CHECKOUT' }, $inc: { __v: 1 } });
   }
-  return { checkIn, checkOut, getAttendance, listAttendance, createManualAttendance, correctAttendance, markMissingCheckouts };
+  async function findForPayroll(employeeId, periodStart, periodEnd) {
+    return Model.find({ employee: employeeId, date: { $gte: periodStart, $lte: periodEnd } });
+  }
+  async function findForReporting({ employeeIds, from, to, statuses } = {}) {
+    const filter = {};
+    if (employeeIds) filter.employee = { $in: employeeIds };
+    if (from || to) {
+      filter.date = {};
+      if (from) filter.date.$gte = from;
+      if (to) filter.date.$lte = to;
+    }
+    if (statuses) filter.status = { $in: statuses };
+    return Model.find(filter);
+  }
+  return { checkIn, checkOut, getAttendance, listAttendance, createManualAttendance, correctAttendance, markMissingCheckouts, findForPayroll, findForReporting };
 }
 module.exports = { createAttendanceService, ...createAttendanceService(), calculateWorkedMinutes, determineStatus };

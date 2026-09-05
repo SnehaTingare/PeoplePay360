@@ -176,9 +176,22 @@ function createLeaveService({ Type = TimeOffType, Allocation = TimeOffAllocation
     // Existing requests/allocations retain their unit and payroll meaning.
     return Boolean(await Request.exists({ timeOffType: id }) || await Allocation.exists({ timeOffType: id }));
   }
+  async function findApprovedForPayroll(employeeId, periodStart, periodEnd) {
+    return Request.find({ employee: employeeId, status: 'APPROVED', startDate: { $lte: periodEnd }, endDate: { $gte: periodStart } })
+      .populate('timeOffType');
+  }
+  async function findRequestsForReporting({ employeeIds, from, to, statuses, decidedAfter } = {}) {
+    const filter = {};
+    if (employeeIds) filter.employee = { $in: employeeIds };
+    if (statuses) filter.status = { $in: statuses };
+    if (from) filter.endDate = { $gte: from };
+    if (to) filter.startDate = { $lte: to };
+    if (decidedAfter) filter.decisionAt = { $gte: decidedAfter };
+    return Request.find(filter);
+  }
   return { createAllocation, updateAllocation, getAllocation, approveAllocation, cancelAllocation, deleteAllocation,
     listAllocations: (query, actor, own = false) => list(query, actor, true, own),
     listRequests: (query, actor, own = false) => list(query, actor, false, own),
-    createRequest, getRequest, approveRequest, refuseRequest, hasTypeHistory };
+    createRequest, getRequest, approveRequest, refuseRequest, hasTypeHistory, findApprovedForPayroll, findRequestsForReporting };
 }
 module.exports = { createLeaveService };

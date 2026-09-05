@@ -1,5 +1,4 @@
 # PeoplePay360 — VALIDATION-ERROR-SPEC.md
-
 ## 1. Purpose
 
 This file defines validation rules, error identifiers, severity, expected system behavior, and recommended HTTP behavior for PeoplePay360.
@@ -73,6 +72,8 @@ Authentication is missing or invalid.
 | SCH-003 | Break >= shift duration | Validation | Reject. |
 | SCH-004 | Duplicate schedule line for same day/time range | Validation/warning | Reject or prevent ambiguous duplicate entry. |
 | SCH-005 | No working days configured | Warning/allowed | Allow only if intentionally representing zero-hour schedule. |
+| SCH-006 | Net daily working time is less than 4 hours | Validation | Reject. |
+| SCH-007 | Daily break exceeds 60 minutes | Validation | Reject. |
 
 ---
 
