@@ -16,7 +16,7 @@ export default function TemporaryPasswordDialog({ result, title = 'User created 
     <h2 id="password-title">{title}</h2>
     <p className="muted">This temporary password is shown only once.</p>
     <dl className="credential-box"><div><dt>Email</dt><dd>{email}</dd></div><div><dt>Temporary password</dt><dd className="temporary-password">{credentials.temporaryPassword}</dd></div></dl>
-    <div className="alert alert--warning">Copy and share this password securely now. It cannot be retrieved later.</div>
+    <div className="alert alert--warning">Employee created successfully. Login credentials have been sent to their registered email address</div>
     <div className="modal-actions"><button className="button button--secondary" onClick={copy}>{copied ? 'Copied' : 'Copy password'}</button><button className="button" onClick={onDone}>Done</button></div>
   </section></div>
 }
