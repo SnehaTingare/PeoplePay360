@@ -1,131 +1,56 @@
 # AGENTS.md — PeoplePay360
 
-This file is the short operating guide for Codex and other coding agents working in this repository.
+PeoplePay360 is currently in the **backend implementation phase**. Unless a task explicitly asks for frontend work, do not modify `client/`.
 
-Do not read every document for every task. Read only the documents listed for the module you are changing.
-
----
-
-## 1. Project
+## 1. Project Architecture
 
 PeoplePay360 is a modular-monolith MERN application:
 
 - Frontend: React + Vite
 - Backend: Node.js + Express
 - Database: MongoDB + Mongoose
-- API style: REST under `/api/v1`
+- REST API base: `/api/v1`
 
 Core flow:
 
 ```text
-User/RBAC
-  → Employee
-  → Contract + Working Schedule
-  → Attendance + Time Off
-  → Salary Structure + Salary Rules
-  → Payrun
-  → Payslip
-  → PDF / Email / Live Dashboard
+Auth / RBAC
+→ Employee
+→ Contract + Working Schedule
+→ Attendance + Time Off
+→ Salary Structure + Salary Rules
+→ Payrun
+→ Payslip
+→ PDF / Email / Live Dashboard
 ```
 
----
+Business logic belongs in backend services, not controllers or frontend code.
 
-## 2. Source-of-Truth Order
+## 2. Current Documentation
 
-When implementing a task, use the relevant documents in this order:
+Use the current files under `docs/`:
 
-1. `docs/01-USER-FLOWS.md` — required user/system workflow
-2. `docs/02-ROLES-PERMISSIONS.md` — authorization and ownership
-3. `docs/03-STATE-MACHINES.md` — canonical states/transitions
-4. `docs/BUSINESS-RULES.md` — domain rules/calculations
-5. `docs/VALIDATION-ERROR-SPEC.md` — validations/error IDs/severity
-6. `docs/DATABASE-SPEC.md` — persistence shape/indexes/snapshots
-7. `docs/API-SPEC.md` — endpoint contract
-8. `docs/PROJECT-STRUCTURE.md` — code organization
-9. `docs/TEST-CASES.md` — expected behavior/acceptance tests
+```text
+01-USER-FLOWS.md
+02-ROLES-PERMISSIONS.md
+03-STATE-MACHINES.md
+AI-CODING-RULES.md
+API-SPEC.md
+BACKEND-STANDARDS.md
+BUSINESS-RULES.md
+MODULES.md
+PROJECT-STRUCTURE.md
+TEST-CASES.md
+VALIDATION-ERROR-SPEC.md
+```
 
-If two documents genuinely conflict, do not guess or silently choose one. Stop and report the conflict.
+`docs/DATABASE-SPEC.md` is not part of the current repository. Do not stop because it is missing and do not recreate it unless explicitly asked.
 
-Do not modify specification documents unless the task explicitly asks for a specification change.
+For persistence/model decisions, use `BUSINESS-RULES.md`, `API-SPEC.md`, `MODULES.md`, `PROJECT-STRUCTURE.md`, and the existing Mongoose models.
 
----
+## 3. Canonical Resolutions
 
-## 3. Read Only What You Need
-
-### Auth / Users / RBAC
-Read:
-- `02-ROLES-PERMISSIONS.md`
-- `VALIDATION-ERROR-SPEC.md`
-- `DATABASE-SPEC.md`
-- `API-SPEC.md`
-
-### Employees / Departments / Working Schedules
-Read:
-- `01-USER-FLOWS.md`
-- `BUSINESS-RULES.md`
-- `DATABASE-SPEC.md`
-- `API-SPEC.md`
-
-### Contracts
-Read:
-- `01-USER-FLOWS.md`
-- `03-STATE-MACHINES.md`
-- `BUSINESS-RULES.md`
-- `VALIDATION-ERROR-SPEC.md`
-- `DATABASE-SPEC.md`
-- `API-SPEC.md`
-
-### Attendance
-Read:
-- `01-USER-FLOWS.md`
-- `03-STATE-MACHINES.md`
-- `BUSINESS-RULES.md`
-- `VALIDATION-ERROR-SPEC.md`
-- `DATABASE-SPEC.md`
-- `API-SPEC.md`
-
-### Time Off / Allocations / Requests
-Read:
-- `01-USER-FLOWS.md`
-- `03-STATE-MACHINES.md`
-- `BUSINESS-RULES.md`
-- `VALIDATION-ERROR-SPEC.md`
-- `DATABASE-SPEC.md`
-- `API-SPEC.md`
-
-### Salary Structures / Salary Rules
-Read:
-- `BUSINESS-RULES.md`
-- `VALIDATION-ERROR-SPEC.md`
-- `DATABASE-SPEC.md`
-- `API-SPEC.md`
-
-### Payruns / Payslips / Payroll Engine
-Read:
-- `01-USER-FLOWS.md`
-- `02-ROLES-PERMISSIONS.md`
-- `03-STATE-MACHINES.md`
-- `BUSINESS-RULES.md`
-- `VALIDATION-ERROR-SPEC.md`
-- `DATABASE-SPEC.md`
-- `API-SPEC.md`
-- relevant payroll sections of `TEST-CASES.md`
-
-### PDF / Email
-Read:
-- `BUSINESS-RULES.md`
-- `API-SPEC.md`
-- relevant sections of `TEST-CASES.md`
-
-### Dashboard / Reports
-Read:
-- `BUSINESS-RULES.md`
-- `API-SPEC.md`
-- relevant reporting tests in `TEST-CASES.md`
-
----
-
-## 4. Canonical Values — Never Invent Alternatives
+Some documents still contain older wording. The following decisions are already resolved and override those stale references.
 
 ### Roles
 
@@ -137,14 +62,14 @@ HR_PAYROLL_MANAGER
 ADMIN
 ```
 
-### User / Employee
+### User / Employee states
 
 ```text
 ACTIVE
 INACTIVE
 ```
 
-### Contract
+### Contract states
 
 ```text
 DRAFT
@@ -153,7 +78,9 @@ EXPIRED
 CANCELLED
 ```
 
-### Attendance
+`UPCOMING` may be derived for display only. Do not replace `RUNNING` with `ACTIVE`.
+
+### Attendance states
 
 ```text
 OPEN
@@ -164,7 +91,7 @@ ABSENT
 MISSING_CHECKOUT
 ```
 
-### Leave Allocation
+### Leave Allocation states
 
 ```text
 DRAFT
@@ -172,7 +99,7 @@ APPROVED
 CANCELLED
 ```
 
-### Leave Request
+### Leave Request states
 
 ```text
 PENDING
@@ -182,7 +109,7 @@ REFUSED
 
 Never use `REJECTED`.
 
-### Payrun / Payslip
+### Payrun / Payslip states
 
 ```text
 DRAFT
@@ -191,7 +118,19 @@ VALIDATED
 PAID
 ```
 
-### Salary Rule Categories
+### Salary Rule calculation types
+
+```text
+FIXED
+PERCENTAGE
+FORMULA
+```
+
+Do not use `DERIVED_FORMULA`.
+
+`CONTRACT_WAGE` is an input/base value only, not a calculation type.
+
+### Salary Rule categories
 
 ```text
 BASIC
@@ -201,91 +140,273 @@ DEDUCTION
 NET
 ```
 
-### Salary Rule Calculation Types
+Do not introduce `CONTRIBUTION` as a canonical category.
+
+If `DERIVED_FORMULA` or `CONTRIBUTION` appears in `PROJECT-STRUCTURE.md`, `MODULES.md`, or `BACKEND-STANDARDS.md`, treat it as stale wording. Do not stop on these known conflicts.
+
+## 4. Read Only Relevant Docs
+
+Do not read every `.md` file for every task.
+
+### Foundation / Auth / Users / RBAC
+
+Read:
 
 ```text
-FIXED
-PERCENTAGE
-FORMULA
+02-ROLES-PERMISSIONS.md
+API-SPEC.md
+BACKEND-STANDARDS.md
+VALIDATION-ERROR-SPEC.md
+AI-CODING-RULES.md
 ```
 
-`CONTRACT_WAGE` is an input/base value, not a calculation type.
+### Departments / Working Schedules / Employees
 
-Do not introduce `DERIVED_FORMULA`, `CONTRIBUTION`, or other new canonical values unless the specifications are deliberately updated first.
+Read:
 
----
+```text
+01-USER-FLOWS.md
+BUSINESS-RULES.md
+API-SPEC.md
+MODULES.md
+BACKEND-STANDARDS.md
+```
 
-## 5. Non-Negotiable Business Rules
+### Contracts / Attendance / Time Off
 
-- Employee is the central HR record.
-- Payroll must use exactly one Contract applicable to the Payrun period.
-- Overlapping applicable Contracts are a blocking payroll error.
-- Working Schedule expected time = `EndTime - StartTime - Break`.
-- Attendance worked time = `CheckOut - CheckIn`; do not automatically subtract the scheduled break.
-- A second open Check-In for the same Employee is invalid.
-- Only approved Leave Allocations provide usable balance.
-- Approved allocation-required leave consumes balance exactly once.
-- REFUSED leave does not consume balance.
-- Overlapping `PENDING` or `APPROVED` leave requests for the same Employee are blocked.
-- Salary Rules execute in ascending sequence.
-- Salary formulas must be safe validated arithmetic; never execute arbitrary JavaScript/Python or `eval`.
-- Payrun creation is two-step: eligibility preview first, explicit employee selection second.
-- Step 1 must not create a Payrun.
-- Payrun flow is `DRAFT → COMPUTED → VALIDATED → PAID`.
-- `COMPUTED` Payruns may be recomputed before validation without creating duplicate Payslips.
-- Blocking payroll errors prevent Validate.
-- Missing bank details and attendance exceptions are non-blocking warnings by default.
-- `PAID` Payruns and historical Payslips are immutable in the normal workflow.
-- Payslips store historical snapshots; later Contract/Salary Rule changes must not alter old Payslips.
-- Mark Paid records payment status only; it does not perform a real bank transfer.
-- PDF, bulk email, and live Dashboard are required project features.
-- Dashboard values must come from persisted data, never hardcoded values.
+Read the relevant sections from:
 
----
+```text
+01-USER-FLOWS.md
+03-STATE-MACHINES.md
+BUSINESS-RULES.md
+VALIDATION-ERROR-SPEC.md
+API-SPEC.md
+MODULES.md
+BACKEND-STANDARDS.md
+```
 
-## 6. Architecture Rules
+### Salary Configuration
 
-Backend dependency direction:
+Read:
+
+```text
+BUSINESS-RULES.md
+VALIDATION-ERROR-SPEC.md
+API-SPEC.md
+MODULES.md
+BACKEND-STANDARDS.md
+```
+
+### Payrun / Payslip / Payroll Engine
+
+Read:
+
+```text
+01-USER-FLOWS.md
+02-ROLES-PERMISSIONS.md
+03-STATE-MACHINES.md
+BUSINESS-RULES.md
+VALIDATION-ERROR-SPEC.md
+API-SPEC.md
+MODULES.md
+BACKEND-STANDARDS.md
+```
+
+Also read only the relevant payroll sections of `TEST-CASES.md`.
+
+### PDF / Email / Dashboard
+
+Read:
+
+```text
+BUSINESS-RULES.md
+API-SPEC.md
+MODULES.md
+```
+
+and only the relevant test sections.
+
+## 5. Parallel Backend Ownership
+
+### Group A — Platform + HR Core
+
+Owns:
+
+```text
+auth
+users
+departments
+schedules
+employees
+contracts
+```
+
+Sequence:
+
+```text
+Auth/User/RBAC
+→ Departments
+→ Working Schedules
+→ Employees
+→ Contracts
+→ Contract resolution
+```
+
+### Group B — HR Operations + Payroll
+
+Owns:
+
+```text
+attendance
+timeOff
+salaryConfig
+payruns
+payslips
+notifications
+reports
+```
+
+Sequence:
+
+```text
+Time Off Types
+→ Salary Structures
+→ Salary Rules
+→ Attendance
+→ Leave Allocations
+→ Leave Requests
+→ Payrun Eligibility
+→ Payrun Create
+→ Compute
+→ Payslips
+→ Validate
+→ Mark Paid
+→ PDF / Email
+→ Dashboard
+```
+
+Do not duplicate Group A models/services inside Group B. Avoid modifying files owned by the other group unless the task explicitly requires integration.
+
+## 6. Backend Architecture Rules
+
+Normal flow:
 
 ```text
 Route
-  → Middleware
-  → Controller
-  → Service
-  → Model / exported service contracts
+→ Middleware
+→ Controller
+→ Service
+→ Model / exported module service
 ```
 
-Responsibilities:
+- Routes: path, HTTP method, auth, authorization, validation, controller binding.
+- Controllers: parse request, call service, send response, pass errors.
+- Services: business rules, state transitions, cross-model coordination.
+- Models: schema, indexes, persistence constraints.
+- Frontend: never authoritative payroll/business logic.
 
-- Routes: URL + middleware wiring only.
-- Controllers: HTTP parsing/response only.
-- Services: business logic and state transitions.
-- Models: schemas, indexes, persistence constraints.
-- Validation: request/schema validation.
-- React: presentation and client orchestration; never authoritative payroll/business logic.
+Do not call controllers from other modules. Prefer exported services for cross-module business access.
 
-Cross-module rules:
+## 7. Non-Negotiable Business Rules
 
-- Do not call controllers from other controllers/modules.
-- Prefer exported module services for cross-module business access.
-- Do not duplicate payroll logic in Payslip PDF, Email, Dashboard, or frontend code.
-- Reports are read-only aggregations.
-- Notifications must not change payroll state.
-- Payslips are generated through Payrun computation; do not create arbitrary public Payslip creation endpoints.
+### Contracts
 
----
+- Preserve historical Contracts.
+- Date ranges determine period applicability.
+- Exactly one applicable Contract is required for payroll.
+- No applicable Contract is blocking.
+- Multiple applicable Contracts are blocking.
+- Never silently choose one when multiple match.
 
-## 7. API Rules
+### Working Schedule
 
-The API contract is `docs/API-SPEC.md`.
+```text
+Expected time = End Time - Start Time - Break
+```
 
-- Base path: `/api/v1`
-- Do not invent endpoints.
-- Do not silently rename request/response fields.
-- Reuse documented error IDs.
-- Use explicit action endpoints for workflow transitions.
+Weekly Hours are derived by backend.
 
-Examples:
+### Attendance
+
+```text
+Actual worked time = CheckOut - CheckIn
+```
+
+Do not subtract scheduled break automatically from actual Attendance.
+
+Prevent a second open Check-In.
+
+Missing checkout becomes `MISSING_CHECKOUT` and is a non-blocking payroll warning by default.
+
+### Leave
+
+- Only approved allocations create usable balance.
+- Approved allocation-required leave consumes balance exactly once.
+- REFUSED leave does not consume balance.
+- Block a new request overlapping another `PENDING` or `APPROVED` request for the same Employee.
+- Approval re-checks balance.
+
+### Salary Rules
+
+- Execute in ascending `sequence`.
+- Calculation types are only `FIXED`, `PERCENTAGE`, `FORMULA`.
+- Categories are only `BASIC`, `ALLOWANCE`, `GROSS`, `DEDUCTION`, `NET`.
+- Formula handling must be safe.
+- Never use `eval`, `Function(...)`, arbitrary JavaScript/Python, shell execution, or other executable user code.
+
+### Payrun
+
+Creation is two-step.
+
+Step 1:
+
+```text
+Salary Structure + Period + optional filters
+→ eligibility preview
+```
+
+Step 1 must not create a Payrun.
+
+Step 2:
+
+```text
+explicit Employee selection
+→ create DRAFT Payrun
+```
+
+State flow:
+
+```text
+DRAFT → COMPUTED → VALIDATED → PAID
+```
+
+`COMPUTED` may be recomputed before validation without creating duplicate Payslips.
+
+Blocking payroll errors prevent Validate.
+
+Missing bank details and attendance exceptions are warnings by default.
+
+### Payslip
+
+- Payslips are generated by Payrun computation.
+- Do not expose arbitrary salary-result creation.
+- Historical Payslips preserve snapshots of the values used.
+- Later Contract or Salary Rule changes must not modify old finalized Payslips.
+
+### Paid Payroll
+
+`PAID` is immutable in the normal workflow.
+
+Mark Paid records payroll state only. It does not perform a real bank transfer.
+
+## 8. API Rules
+
+Follow `docs/API-SPEC.md`.
+
+Do not invent alternate endpoints.
+
+Use explicit business-action endpoints, for example:
 
 ```text
 POST /time-off/requests/:id/approve
@@ -296,115 +417,161 @@ POST /payroll/payruns/:id/validate
 POST /payroll/payruns/:id/mark-paid
 ```
 
-Never implement generic state manipulation such as:
+Do not implement generic state manipulation such as:
 
 ```text
-PATCH /payroll/payruns/:id { "status": "PAID" }
+PATCH /payroll/payruns/:id
+{ "status": "PAID" }
 ```
 
-Employee self-service must enforce resource ownership on the backend.
+Employee self-service must enforce ownership on the backend.
 
----
+## 9. Validation / Error Rules
 
-## 8. Security Rules
+Reuse existing IDs from `VALIDATION-ERROR-SPEC.md`.
 
-- Passwords are always hashed.
-- Never return password hashes.
+Do not invent a new domain error ID when an existing one already covers the case.
+
+Known decisions:
+
+```text
+Missing required Employee department/position
+→ reject
+
+Insufficient leave balance
+→ reject request / block approval and re-check on approval
+
+Salary Structure with no active rules
+→ blocking for payroll computation
+
+Missing checkout / attendance exception
+→ non-blocking WARNING by default
+```
+
+## 10. Security Rules
+
+- Hash passwords.
+- Never return plaintext passwords or password hashes.
 - No public Admin registration.
-- Backend RBAC is mandatory; hidden UI controls are not security.
-- Validate ownership for Employee self-service records.
-- Do not expose stack traces, environment secrets, database secrets, or sensitive implementation details.
-- Never execute untrusted salary formula code.
+- Enforce RBAC on backend.
+- Enforce Employee resource ownership on backend.
+- Validate incoming IDs and payloads.
+- Do not expose stack traces or environment secrets.
+- Do not execute arbitrary salary-rule code.
+- Do not trust client-supplied Employee IDs for Employee self-service actions.
 
----
-
-## 9. Coding Rules for Codex
+## 11. Codex Working Rules
 
 For every task:
 
-1. Inspect the existing implementation first.
-2. Read only the relevant docs listed above.
-3. State briefly which files/modules you intend to modify.
-4. Implement the smallest complete change that satisfies the task.
-5. Do not refactor unrelated code.
-6. Do not modify another module's contract unnecessarily.
-7. Do not add a new package/dependency unless it is genuinely needed; report it before adding when avoidable.
-8. Reuse existing shared utilities/components before creating duplicates.
-9. Preserve existing naming conventions and directory structure.
-10. Add/update tests for important business rules when practical.
-11. Run the relevant tests/build/lint commands available in the repository after changes.
-12. Report changed files, validation performed, and any unresolved issue.
+1. Inspect existing code first.
+2. Read `AGENTS.md`.
+3. Read only the relevant docs above.
+4. Identify briefly which files need changes.
+5. Implement only the requested backend scope.
+6. Do not modify frontend unless explicitly asked.
+7. Do not refactor unrelated modules.
+8. Do not rename documented endpoints, roles, statuses, or error IDs.
+9. Reuse existing utilities/services before creating duplicates.
+10. Keep cross-module dependencies explicit.
+11. Add/update targeted tests when practical.
+12. Run relevant tests/lint/build commands.
+13. Report changed files, implemented behavior, checks run, and unresolved issues.
 
-Do not create empty placeholder abstractions or folders merely to match a theoretical architecture.
+Do not create unused abstractions or empty architecture-only folders.
 
----
+## 12. Conflict Handling
 
-## 10. Change-Control Rule
+### Known resolved conflicts — do not stop
 
-Never silently change any of the following just to make implementation easier:
+```text
+DERIVED_FORMULA vs FORMULA
+→ FORMULA wins
+
+CONTRIBUTION vs canonical Salary Rule categories
+→ do not use CONTRIBUTION
+
+REJECTED vs REFUSED
+→ REFUSED wins
+
+ACTIVE Contract vs RUNNING Contract
+→ RUNNING wins
+
+Missing DATABASE-SPEC.md
+→ DATABASE-SPEC is not required in the current repo
+```
+
+### New conflicts
+
+For any genuinely different unresolved conflict:
+
+```text
+STOP
+→ identify both conflicting rules
+→ explain which implementation decision is blocked
+→ do not silently guess
+```
+
+Do not stop merely because a stale occurrence of one of the known resolved conflicts still exists.
+
+## 13. Change Control
+
+Do not silently change:
 
 ```text
 roles
 canonical statuses
 state transitions
-database relationships
-Salary Rule semantics
-payroll calculations
+business calculations
+API paths
+request/response meaning
 error IDs
-API endpoints
-request/response contracts
-authorization rules
-historical immutability rules
+ownership rules
+module ownership
+historical payroll behavior
 ```
 
-If implementation appears to require such a change:
+If implementation genuinely requires a specification change, report it first.
+
+## 14. Hackathon Priority
+
+Prioritize this working backend path first:
 
 ```text
-STOP
-→ explain the conflict
-→ identify the relevant specification
-→ propose the smallest change
-→ wait for approval
-```
-
----
-
-## 11. Hackathon Priority
-
-Build working end-to-end behavior before optional infrastructure.
-
-Primary success path:
-
-```text
-Login/RBAC
+Auth/RBAC
 → Employee
-→ Contract + Schedule
-→ Attendance / Leave
-→ Salary Structure + Salary Rules
-→ Payrun eligibility
-→ Select Employees
+→ Contract
+→ Salary Structure/Rules
+→ Payrun Eligibility
+→ Create Payrun
 → Compute
-→ Payslip + Warnings
+→ Payslip
 → Validate
 → Mark Paid
-→ PDF / Email
-→ Live Dashboard
 ```
 
-Do not spend hackathon time on microservices, Kubernetes, Redis, complex audit infrastructure, real bank integration, statutory payroll integrations, AI features, or unrelated refactors before the required flow works.
+Then complete:
 
----
+```text
+Attendance
+Time Off
+PDF
+Email
+Dashboard
+```
 
-## 12. Definition of Done for a Coding Task
+Do not spend core implementation time on microservices, Redis, Kubernetes, complex event systems, real payment integration, statutory integrations, AI features, or unrelated refactors.
 
-A task is done when:
+## 15. Definition of Done
 
-- implementation matches the relevant docs,
-- backend authorization is enforced,
-- validation/business rules are applied in services,
-- canonical roles/statuses are preserved,
-- API contract is preserved,
-- no historical payroll behavior is broken,
-- no hardcoded business result is introduced,
-- the affected flow has been manually or automatically verified,
-- unrelated modules remain untouched.
+A backend task is complete when:
+
+- it matches the documented API,
+- RBAC is enforced,
+- business logic is in services,
+- validation/error IDs are consistent,
+- canonical states/roles are preserved,
+- no unrelated module is broken,
+- relevant checks pass,
+- no hardcoded payroll result is introduced,
+- historical payroll behavior remains intact.
