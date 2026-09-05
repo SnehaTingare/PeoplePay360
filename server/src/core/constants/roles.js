@@ -1,0 +1,9 @@
+'use strict';
+
+module.exports = Object.freeze({
+  EMPLOYEE: 'EMPLOYEE',
+  HR_MANAGER: 'HR_MANAGER',
+  HR_PAYROLL_USER: 'HR_PAYROLL_USER',
+  HR_PAYROLL_MANAGER: 'HR_PAYROLL_MANAGER',
+  ADMIN: 'ADMIN',
+});
