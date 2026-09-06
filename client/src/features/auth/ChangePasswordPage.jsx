@@ -7,6 +7,8 @@ import ErrorBanner from '../../shared/components/ErrorBanner/ErrorBanner'
 import ConfirmDialog from '../../shared/components/ConfirmDialog/ConfirmDialog'
 import FormField from '../../shared/components/FormField/FormField'
 
+import favicon from '../../assets/favicon.svg'
+
 export default function ChangePasswordPage() {
   const { user, refreshUser, logout } = useAuth()
   const navigate = useNavigate()
@@ -33,7 +35,16 @@ export default function ChangePasswordPage() {
     finally { setBusy(false) }
   }
 
-  return <div className="auth-card"><div className="brand brand--auth"><span className="brand-mark">P</span><div><strong>PeoplePay360</strong><small>Account security</small></div></div><div className="auth-heading"><h1>Change your password</h1><p>{user.mustChangePassword ? 'Set a new password before accessing your workspace.' : 'Update the password used for your account.'}</p></div>
+  return <div className="auth-card"><div className="brand brand--auth">
+  <span className="brand-mark">
+    <img src={favicon} alt="PeoplePay360" />
+  </span>
+
+  <div>
+    <strong>PeoplePay360</strong>
+    <small>Account security</small>
+  </div>
+</div><div className="auth-heading"><h1>Change your password</h1><p>{user.mustChangePassword ? 'Set a new password before accessing your workspace.' : 'Update the password used for your account.'}</p></div>
     <ErrorBanner message={error} />{success && <div className="alert alert--success">{success}</div>}
     <form onSubmit={submit} className="stack"><FormField label="Current password" htmlFor="currentPassword"><input id="currentPassword" type="password" autoComplete="current-password" required value={form.currentPassword} onChange={(event) => setForm({ ...form, currentPassword: event.target.value })} /></FormField><FormField label="New password" hint="Use at least 8 characters." htmlFor="newPassword"><input id="newPassword" type="password" autoComplete="new-password" minLength="8" required value={form.newPassword} onChange={(event) => setForm({ ...form, newPassword: event.target.value })} /></FormField><FormField label="Confirm new password" htmlFor="confirmation"><input id="confirmation" type="password" autoComplete="new-password" minLength="8" required value={form.confirmation} onChange={(event) => setForm({ ...form, confirmation: event.target.value })} /></FormField><button className="button button--full" disabled={busy}>{busy ? 'Changing password…' : 'Change password'}</button></form>
     <button className="button-link auth-logout" onClick={() => setLogoutConfirmationOpen(true)}>Sign out</button>
