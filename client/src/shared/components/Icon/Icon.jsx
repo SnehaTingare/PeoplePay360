@@ -10,11 +10,18 @@ const paths = {
   logout: 'M10 17v-2h6.17l-2.59 2.59L15 19l5-5-5-5-1.42 1.41L16.17 13H10v-2H8v6h2ZM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5Z',
   menu: 'M3 18h18v-2H3v2Zm0-5h18v-2H3v2Zm0-7v2h18V6H3Z',
 
-key: 'M7 14a5 5 0 1 1 4.9 4H10v3H8v-3H6v-2H4v-2h3Zm5-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
-  plus: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z',
-  arrow: 'm12 4-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8Z',
+const icons = {
+  workspace: Home, profile: UserRound, attendance: Clock3, timeOff: CalendarDays,
+  payslips: ReceiptText, employees: UsersRound, schedules: CalendarClock,
+  departments: Building2, users: UsersRound, contracts: BriefcaseBusiness,
+  allocations: CalendarCheck2, timeOffTypes: ClipboardList, payroll: CircleDollarSign,
+  dashboard: LayoutDashboard, payruns: CircleDollarSign, salaryStructures: Layers3,
+  salaryRules: Settings2, notifications: Bell, key: KeyRound, logout: LogOut,
+  menu: Menu, chevronDown: ChevronDown, close: X, success: CheckCircle2,
+  arrow: ArrowRight, plus: Plus, search: Search, security: ShieldCheck,
 }
 
-export default function Icon({ name, size = 20, label }) {
-  return <svg className="icon" width={size} height={size} viewBox="0 0 24 24" aria-hidden={label ? undefined : true} aria-label={label} focusable="false"><path d={paths[name] || paths.dashboard} /></svg>
+export default function Icon({ name, size = 20, label, ...props }) {
+  const Glyph = icons[name] || icons.dashboard
+  return <Glyph className="icon" width={size} height={size} strokeWidth={1.9} aria-hidden={label ? undefined : true} aria-label={label} focusable="false" {...props} />
 }

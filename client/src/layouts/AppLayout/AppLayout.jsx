@@ -5,6 +5,7 @@ import { useTheme } from '../../app/providers/themeContext'
 import { roleLabel } from '../../shared/constants/roles'
 import ConfirmDialog from '../../shared/components/ConfirmDialog/ConfirmDialog'
 import Icon from '../../shared/components/Icon/Icon'
+import { NotificationBell } from '../../features/notifications'
 import { navigationFor } from '../navigation/roleNavigation'
 import favicon from '../../assets/favicon.svg'
 
@@ -17,7 +18,6 @@ export default function AppLayout() {
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
 
   // Stores which dropdown menus are open
   const [openMenus, setOpenMenus] = useState({})

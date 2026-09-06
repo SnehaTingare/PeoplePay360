@@ -18,7 +18,7 @@ export const navigationFor = (user) => [
   {
     label: 'Workspace',
     to: '/',
-    icon: 'WS',
+    icon: 'workspace',
     end: true,
   },
 
@@ -33,25 +33,25 @@ export const navigationFor = (user) => [
         {
           label: 'My profile',
           to: '/my-profile',
-          icon: 'ME',
+          icon: 'profile',
         },
 
         {
           label: 'My attendance',
           to: '/attendance',
-          icon: 'AT',
+          icon: 'attendance',
         },
 
         {
           label: 'My time off',
           to: '/time-off/requests',
-          icon: 'TO',
+          icon: 'timeOff',
         },
 
         {
           label: 'My payslips',
           to: '/my-payslips',
-          icon: 'PS',
+          icon: 'payslips',
         },
 
       ]
@@ -76,7 +76,7 @@ export const navigationFor = (user) => [
 
         {
           label: 'Employees',
-          icon: 'EM',
+          icon: 'employees',
 
           children: [
 
@@ -85,7 +85,7 @@ export const navigationFor = (user) => [
                   {
                     label: 'Employees',
                     to: '/employees',
-                    icon: 'EM',
+                    icon: 'employees',
                   },
                 ]
               : []),
@@ -96,13 +96,13 @@ export const navigationFor = (user) => [
                   {
                     label: 'Working schedules',
                     to: '/working-schedules',
-                    icon: 'SC',
+                    icon: 'schedules',
                   },
 
                   {
                     label: 'Departments',
                     to: '/departments',
-                    icon: 'DE',
+                    icon: 'departments',
                   },
 
                 ]
@@ -113,7 +113,7 @@ export const navigationFor = (user) => [
                   {
                     label: 'Users',
                     to: '/users',
-                    icon: 'US',
+                    icon: 'users',
                   },
                 ]
               : []),
@@ -135,7 +135,7 @@ export const navigationFor = (user) => [
         {
           label: 'Contracts',
           to: '/contracts',
-          icon: 'CO',
+          icon: 'contracts',
         },
       ]
     : []),
@@ -151,7 +151,7 @@ export const navigationFor = (user) => [
         {
           label: 'Attendance',
           to: '/attendance',
-          icon: 'AT',
+          icon: 'attendance',
         },
       ]
     : []),
@@ -166,20 +166,20 @@ export const navigationFor = (user) => [
 
         {
           label: 'Time Off',
-          icon: 'TO',
+          icon: 'timeOff',
 
           children: [
 
             {
               label: 'Time off requests',
               to: '/time-off/requests',
-              icon: 'TO',
+              icon: 'timeOff',
             },
 
             {
               label: 'Allocations',
               to: '/time-off/allocations',
-              icon: 'BA',
+              icon: 'allocations',
             },
 
             ...(canManageHrOperations(user)
@@ -187,7 +187,7 @@ export const navigationFor = (user) => [
                   {
                     label: 'Time off types',
                     to: '/time-off/types',
-                    icon: 'TT',
+                    icon: 'timeOffTypes',
                   },
                 ]
               : []),
@@ -208,7 +208,7 @@ export const navigationFor = (user) => [
 
         {
           label: 'Payrolls',
-          icon: 'PR',
+          icon: 'payroll',
 
           children: [
 
@@ -218,19 +218,19 @@ export const navigationFor = (user) => [
                   {
                     label: 'Payroll Dashboard',
                     to: '/payroll/dashboard',
-                    icon: 'DB',
+                    icon: 'dashboard',
                   },
 
                   {
                     label: 'Payruns',
                     to: '/payroll/payruns',
-                    icon: 'PR',
+                    icon: 'payruns',
                   },
 
                   {
                     label: 'Payslips',
                     to: '/payroll/payslips',
-                    icon: 'PL',
+                    icon: 'payslips',
                   },
 
                 ]
@@ -242,13 +242,13 @@ export const navigationFor = (user) => [
                   {
                     label: 'Salary Structures',
                     to: '/salary-config/structures',
-                    icon: 'SS',
+                    icon: 'salaryStructures',
                   },
 
                   {
                     label: 'Salary Rules',
                     to: '/salary-config/rules',
-                    icon: 'SR',
+                    icon: 'salaryRules',
                   },
 
                 ]
@@ -268,7 +268,7 @@ export const navigationFor = (user) => [
   {
     label: 'Notifications',
     to: '/notifications',
-    icon: 'NT',
+    icon: 'notifications',
   },
 
 ]

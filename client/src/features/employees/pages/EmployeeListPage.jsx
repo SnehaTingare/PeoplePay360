@@ -4,6 +4,7 @@ import { getApiError } from '../../../shared/api/apiError'
 import ConfirmDialog from '../../../shared/components/ConfirmDialog/ConfirmDialog'
 import DataTable from '../../../shared/components/DataTable/DataTable'
 import ErrorBanner from '../../../shared/components/ErrorBanner/ErrorBanner'
+import Icon from '../../../shared/components/Icon/Icon'
 import LoadingState from '../../../shared/components/LoadingState/LoadingState'
 import Pagination from '../../../shared/components/Pagination/Pagination'
 import StatusBadge from '../../../shared/components/StatusBadge/StatusBadge'
@@ -58,7 +59,7 @@ export default function EmployeeListPage() {
     : <p className="empty-workspace">No employees found.</p>
   const employeeView = view === 'kanban' ? employeeKanban : <DataTable columns={columns} rows={normalizedRows} emptyMessage="No employees found." />
   return <><header className="page-header"><div><p className="eyebrow">HR records</p><h1>Employees</h1><p>Manage central employee records and employment information.</p></div><Link className="button" to="/employees/new">+ New employee</Link></header>
-    {notice && <div className="alert alert--success dismissible">{notice}<button aria-label="Dismiss" onClick={() => setNotice('')}>×</button></div>}<ErrorBanner message={error || references.error} />
+    {notice && <div className="alert alert--success dismissible">{notice}<button aria-label="Dismiss" onClick={() => setNotice('')}><Icon name="close" size={16} /></button></div>}<ErrorBanner message={error || references.error} />
     <section className="panel"><div className="employee-filters"><input aria-label="Search employees" placeholder="Search name, email, or employee ID" value={filters.q} onChange={(event) => setFilters({ ...filters, q: event.target.value, page: 1 })} /><select aria-label="Filter by department" value={filters.departmentId} onChange={(event) => setFilters({ ...filters, departmentId: event.target.value, page: 1 })}><option value="">All departments</option>{references.departments.map((department) => <option key={recordId(department)} value={recordId(department)}>{department.name}</option>)}</select><select aria-label="Filter by manager" value={filters.managerId} onChange={(event) => setFilters({ ...filters, managerId: event.target.value, page: 1 })}><option value="">All managers</option>{references.managers.map((manager) => <option key={recordId(manager)} value={recordId(manager)}>{manager.firstName} {manager.lastName}</option>)}</select><select aria-label="Filter by status" value={filters.employmentStatus} onChange={(event) => setFilters({ ...filters, employmentStatus: event.target.value, page: 1 })}><option value="">All statuses</option><option>ACTIVE</option><option>INACTIVE</option></select></div>
       <div className="employee-view-toolbar"><span>View: {view === 'kanban' ? 'Kanban' : 'List'}</span><div className="view-toggle" role="group" aria-label="Employee view"><button className={view === 'kanban' ? 'active' : ''} onClick={() => setView('kanban')}>Kanban</button><button className={view === 'list' ? 'active' : ''} onClick={() => setView('list')}>List</button></div></div>
       {loading ? <LoadingState label="Loading employees…" /> : <>{employeeView}<Pagination meta={meta} onPageChange={(page) => setFilters({ ...filters, page })} /></>}
