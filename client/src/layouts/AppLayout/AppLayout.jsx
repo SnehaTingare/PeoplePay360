@@ -4,6 +4,7 @@ import { useAuth } from '../../app/providers/authContext'
 import { roleLabel } from '../../shared/constants/roles'
 import ConfirmDialog from '../../shared/components/ConfirmDialog/ConfirmDialog'
 import Icon from '../../shared/components/Icon/Icon'
+import { NotificationBell } from '../../features/notifications'
 import { navigationFor } from '../navigation/roleNavigation'
 
 export default function AppLayout() {
@@ -14,7 +15,6 @@ export default function AppLayout() {
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
 
   // Stores which dropdown menus are open
   const [openMenus, setOpenMenus] = useState({})
@@ -158,7 +158,7 @@ export default function AppLayout() {
                           menuOpen ? 'nav-arrow--open' : ''
                         }`}
                       >
-                        ▾
+                        <Icon name="chevronDown" size={16} />
                       </span>
                     </button>
 
@@ -269,55 +269,7 @@ export default function AppLayout() {
 
             <div className="topbar-actions">
 
-              <div className="notification-wrap">
-
-                <button
-                  className="icon-button"
-                  type="button"
-                  aria-label="Notifications"
-                  aria-expanded={notificationsOpen}
-                  title="Notifications"
-                  onClick={() =>
-                    setNotificationsOpen(
-                      (current) => !current
-                    )
-                  }
-                >
-                  <Icon
-                    name="bell"
-                    size={19}
-                  />
-                </button>
-
-                {notificationsOpen && (
-                  <section
-                    className="notification-popover"
-                    aria-label="Notifications"
-                  >
-                    <div>
-                      <strong>
-                        Notifications
-                      </strong>
-
-                      <button
-                        aria-label="Close notifications"
-                        onClick={() =>
-                          setNotificationsOpen(false)
-                        }
-                      >
-                        ×
-                      </button>
-                    </div>
-
-                    <p>
-                      You’re all caught up.
-                      Updates from your workspace
-                      will appear here.
-                    </p>
-                  </section>
-                )}
-
-              </div>
+              <NotificationBell />
 
               <div className="topbar-user">
   <span className="avatar">{initials}</span>

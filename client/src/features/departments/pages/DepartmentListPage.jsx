@@ -4,6 +4,7 @@ import { getApiError } from '../../../shared/api/apiError'
 import ConfirmDialog from '../../../shared/components/ConfirmDialog/ConfirmDialog'
 import DataTable from '../../../shared/components/DataTable/DataTable'
 import ErrorBanner from '../../../shared/components/ErrorBanner/ErrorBanner'
+import Icon from '../../../shared/components/Icon/Icon'
 import LoadingState from '../../../shared/components/LoadingState/LoadingState'
 import Pagination from '../../../shared/components/Pagination/Pagination'
 import StatusBadge from '../../../shared/components/StatusBadge/StatusBadge'
@@ -47,7 +48,7 @@ export default function DepartmentListPage() {
 
   const normalizedRows = rows.map((row) => ({ ...row, id: row.id || row._id }))
   return <><header className="page-header"><div><p className="eyebrow">HR configuration</p><h1>Departments</h1><p>Organize teams and maintain active department records.</p></div><Link className="button" to="/departments/new">+ New department</Link></header>
-    {notice && <div className="alert alert--success dismissible">{notice}<button aria-label="Dismiss" onClick={() => setNotice('')}>×</button></div>}<ErrorBanner message={error} />
+    {notice && <div className="alert alert--success dismissible">{notice}<button aria-label="Dismiss" onClick={() => setNotice('')}><Icon name="close" size={16} /></button></div>}<ErrorBanner message={error} />
     <section className="panel"><div className="filters filters--compact"><input aria-label="Search departments" placeholder="Search name or code" value={filters.q} onChange={(event) => setFilters({ ...filters, q: event.target.value, page: 1 })} /><select aria-label="Filter by status" value={filters.active} onChange={(event) => setFilters({ ...filters, active: event.target.value, page: 1 })}><option value="">All statuses</option><option value="true">Active</option><option value="false">Inactive</option></select></div>
       {loading ? <LoadingState label="Loading departments…" /> : <><DataTable columns={columns} rows={normalizedRows} emptyMessage="No departments found." /><Pagination meta={meta} onPageChange={(page) => setFilters({ ...filters, page })} /></>}
     </section><ConfirmDialog open={Boolean(selected)} title="Deactivate this department?" message={`${selected?.name || 'This department'} will remain available in historical records but cannot be used as an active department.`} confirmLabel="Deactivate" danger busy={busy} onCancel={() => setSelected(null)} onConfirm={deactivate} /></>
