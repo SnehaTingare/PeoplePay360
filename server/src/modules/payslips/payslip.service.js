@@ -3,6 +3,7 @@
 const Payslip = require('./payslip.model');
 const mongoose = require('mongoose');
 const AppError = require('../../core/errors/AppError');
+const roles = require('../../core/constants/roles');
 const paginate = require('../../core/http/pagination');
 const employeeService = require('../employees/employee.service');
 const pdfService = require('./payslipPdf.service');
@@ -39,6 +40,31 @@ function createPayslipService({
     if (!record) throw new AppError('RESOURCE_NOT_FOUND', 'Payslip not found.', 404);
     return record;
   }
+  async function assertActorAccess(payslip, actor) {
+    if (!actor || actor.role !== roles.EMPLOYEE) return;
+    const employee = await employees.getOwnEmployee(actor);
+    if (payslip.status !== 'PAID' || String(payslip.employee) !== String(employee._id)) {
+      throw new AppError('AUTH-003', 'You do not have permission to access this Payslip.', 403);
+    }
+  }
+  const toPlainObject = record => (
+    typeof record?.toObject === 'function' ? record.toObject() : { ...record }
+  );
+  async function withPayrunSummary(payslip) {
+    const payrun = await getPayrun(payslip.payrun);
+    return {
+      ...toPlainObject(payslip),
+      payrunSummary: {
+        id: String(payrun._id || payrun.id || payslip.payrun),
+        name: payrun.name,
+      },
+    };
+  }
+  async function getPayslipForActor(id, actor) {
+    const payslip = await getPayslip(id);
+    await assertActorAccess(payslip, actor);
+    return withPayrunSummary(payslip);
+  }
   async function listPayslips({ payrunId, employeeId, status, from, to, page, limit }) {
     const filter = {};
     if (payrunId) filter.payrun = payrunId;
@@ -68,8 +94,9 @@ function createPayslipService({
       throw new AppError('PSL-005', 'Payslip PDF generation failed.', 500);
     }
   }
-  async function generatePayslipPdf(id) {
+  async function generatePayslipPdf(id, actor) {
     const payslip = await getPayslip(id);
+    await assertActorAccess(payslip, actor);
     if (!['VALIDATED', 'PAID'].includes(payslip.status)) {
       throw new AppError('RESOURCE_CONFLICT', 'Final Payslip PDF is available only for Validated or Paid Payslips.', 409);
     }
@@ -78,7 +105,19 @@ function createPayslipService({
   }
   async function listOwnPaidPayslips(actor, { page = 1, limit = 20 } = {}) {
     const employee = await employees.getOwnEmployee(actor);
-    return paginate(Model, { employee: employee._id, status: 'PAID' }, { page, limit }, { periodStart: -1, _id: -1 });
+    const result = await paginate(Model, { employee: employee._id, status: 'PAID' }, { page, limit }, { periodStart: -1, _id: -1 });
+    const summaries = new Map();
+    result.data = await Promise.all(result.data.map(async payslip => {
+      const payrunId = String(payslip.payrun);
+      if (!summaries.has(payrunId)) {
+        summaries.set(payrunId, getPayrun(payslip.payrun).then(payrun => ({
+          id: String(payrun._id || payrun.id || payslip.payrun),
+          name: payrun.name,
+        })));
+      }
+      return { ...toPlainObject(payslip), payrunSummary: await summaries.get(payrunId) };
+    }));
+    return result;
   }
   async function findForReporting({ employeeIds, from, to, statuses } = {}) {
     const filter = {};
@@ -88,7 +127,7 @@ function createPayslipService({
     if (statuses) filter.status = { $in: statuses };
     return Model.find(filter);
   }
-  return { existsForPayrollScope, findDuplicateOutsidePayrun, upsertComputedPayslip, removeUnfinalizedPayslipForEmployee, getPayslip, listPayslips, findForPayrun, updateStatusForPayrun, generatePdfForRecord, generatePayslipPdf, listOwnPaidPayslips, findForReporting };
+  return { existsForPayrollScope, findDuplicateOutsidePayrun, upsertComputedPayslip, removeUnfinalizedPayslipForEmployee, getPayslip, getPayslipForActor, listPayslips, findForPayrun, updateStatusForPayrun, generatePdfForRecord, generatePayslipPdf, listOwnPaidPayslips, findForReporting };
 }
 
 module.exports = { createPayslipService, ...createPayslipService() };

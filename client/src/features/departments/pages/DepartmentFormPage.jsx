@@ -22,7 +22,7 @@ export default function DepartmentFormPage() {
   }, [editing, id])
 
   useEffect(() => {
-    employeesApi.list({ active: true, page: 1, limit: 100 })
+    employeesApi.list({ employmentStatus: 'ACTIVE', page: 1, limit: 100 })
       .then((result) => setManagerOptions(result.data))
       .catch((requestError) => setError(getApiError(requestError).message))
   }, [])

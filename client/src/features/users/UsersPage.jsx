@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../app/providers/authContext'
 import { usersApi } from '.'
-import { useAuth } from '../../app/providers/authContext'
 import { getApiError } from '../../shared/api/apiError'
 import ConfirmDialog from '../../shared/components/ConfirmDialog/ConfirmDialog'
 import DataTable from '../../shared/components/DataTable/DataTable'
@@ -25,7 +24,6 @@ export default function UsersPage() {
   const { user: currentUser } = useAuth()
   const currentUserId = currentUser?.id
   const location = useLocation()
-  const { user: currentUser } = useAuth()
   const [users, setUsers] = useState([])
   const [meta, setMeta] = useState(null)
   const [filters, setFilters] = useState({ q: '', role: '', accountStatus: '', page: 1, limit: 10 })

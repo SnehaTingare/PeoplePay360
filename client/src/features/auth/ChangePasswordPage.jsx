@@ -16,6 +16,7 @@ export default function ChangePasswordPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [busy, setBusy] = useState(false)
+  const [passwordConfirmationOpen, setPasswordConfirmationOpen] = useState(false)
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false)
 
   const signOut = () => { logout(); navigate('/login', { replace: true }) }
@@ -24,6 +25,10 @@ export default function ChangePasswordPage() {
     event.preventDefault(); setError(''); setSuccess('')
     if (form.newPassword.length < 8) return setError('New password must be at least 8 characters.')
     if (form.newPassword !== form.confirmation) return setError('New password and confirmation must match.')
+    setPasswordConfirmationOpen(true)
+  }
+
+  const changePassword = async () => {
     setBusy(true)
     try {
       await authApi.changePassword({ currentPassword: form.currentPassword, newPassword: form.newPassword })
@@ -32,7 +37,7 @@ export default function ChangePasswordPage() {
       setSuccess('Password changed successfully. Redirecting…')
       setTimeout(() => navigate('/', { replace: true }), 500)
     } catch (requestError) { setError(getApiError(requestError, requestError.message).message) }
-    finally { setBusy(false) }
+    finally { setBusy(false); setPasswordConfirmationOpen(false) }
   }
 
   return <div className="auth-card"><div className="brand brand--auth">
@@ -48,6 +53,7 @@ export default function ChangePasswordPage() {
     <ErrorBanner message={error} />{success && <div className="alert alert--success">{success}</div>}
     <form onSubmit={submit} className="stack"><FormField label="Current password" htmlFor="currentPassword"><input id="currentPassword" type="password" autoComplete="current-password" required value={form.currentPassword} onChange={(event) => setForm({ ...form, currentPassword: event.target.value })} /></FormField><FormField label="New password" hint="Use at least 8 characters." htmlFor="newPassword"><input id="newPassword" type="password" autoComplete="new-password" minLength="8" required value={form.newPassword} onChange={(event) => setForm({ ...form, newPassword: event.target.value })} /></FormField><FormField label="Confirm new password" htmlFor="confirmation"><input id="confirmation" type="password" autoComplete="new-password" minLength="8" required value={form.confirmation} onChange={(event) => setForm({ ...form, confirmation: event.target.value })} /></FormField><button className="button button--full" disabled={busy}>{busy ? 'Changing password…' : 'Change password'}</button></form>
     <button className="button-link auth-logout" onClick={() => setLogoutConfirmationOpen(true)}>Sign out</button>
+    <ConfirmDialog open={passwordConfirmationOpen} title="Change password?" message="Are you sure you want to change your account password?" confirmLabel="Change password" busy={busy} onCancel={() => setPasswordConfirmationOpen(false)} onConfirm={changePassword} />
     <ConfirmDialog open={logoutConfirmationOpen} title="Log out?" message="Are you sure you want to log out?" confirmLabel="Logout" onCancel={() => setLogoutConfirmationOpen(false)} onConfirm={signOut} />
   </div>
 }
